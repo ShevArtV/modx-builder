@@ -8,34 +8,7 @@
 composer global require shevartv/modx-builder
 ```
 
-!!! note "PATH"
-    Убедитесь, что путь к глобальным Composer-пакетам добавлен в `PATH`. Узнать путь:
-    ```bash
-    composer global config bin-dir --absolute
-    ```
-
-    === "Linux"
-
-        Добавьте в `~/.bashrc`:
-        ```bash
-        export PATH="$HOME/.config/composer/vendor/bin:$PATH"
-        ```
-
-    === "macOS"
-
-        Добавьте в `~/.zshrc`:
-        ```bash
-        export PATH="$HOME/.composer/vendor/bin:$PATH"
-        ```
-
-    === "Windows"
-
-        Добавьте в системную переменную `PATH`:
-        ```
-        %USERPROFILE%\AppData\Roaming\Composer\vendor\bin
-        ```
-
-Также можно установить локально: `composer require shevartv/modx-builder --dev` — тогда команда вызывается как `vendor/bin/modxapp`.
+Подробнее о вариантах установки и настройке PATH: [Установка](getting-started.md)
 
 ## 2. Настройка окружения
 

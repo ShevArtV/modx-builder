@@ -2,129 +2,92 @@
 
 ## Системные требования
 
+### Минимальные (headless-режим)
+
 - **PHP** 8.1+
 - **Composer**
 - **Расширения PHP**: `zip`, `mbstring`
-- **MODX Revolution 3** + **MySQL/MariaDB** — только для команд `elements` и `export` (работа с БД)
 
-## Варианты работы
+Достаточно для `setup`, `create`, `build`, `extract-*`.
 
-| Вариант | Описание | Установка |
-|---------|----------|-----------|
-| **Headless** | Локально без MODX и MySQL. Создание, сборка, генерация классов | `modxapp setup` скачает ядро MODX |
-| **Локальный MODX** | Полный функционал, все команды | MODX уже установлен |
-| **Удалённый сервер** | Код пишется локально, сборка на сервере с MODX | Установить Package Builder на сервере |
+### Для полного функционала
 
-В headless-режиме недоступны команды `elements` (добавление элементов в админку) и `export` (извлечение из БД). Все остальные команды работают.
+- **PHP** 8.1+
+- **Composer**
+- **MODX Revolution 3** (установленный)
+- **MySQL/MariaDB**
+- **Расширения PHP**: `pdo_mysql`, `zip`, `mbstring`
 
-## Через Composer
+Необходимо для команд `elements`, `export` и `build --install`.
+
+## Глобальная установка (рекомендуется)
+
+```bash
+composer global require shevartv/modx-builder
+```
+
+Команда `modxapp` будет доступна из любой директории.
+
+!!! note "PATH"
+    Убедитесь, что путь к глобальным Composer-пакетам добавлен в `PATH`. Узнать путь:
+    ```bash
+    composer global config bin-dir --absolute
+    ```
+
+    === "Linux"
+
+        Добавьте в `~/.bashrc`:
+        ```bash
+        export PATH="$HOME/.config/composer/vendor/bin:$PATH"
+        ```
+
+    === "macOS"
+
+        Добавьте в `~/.zshrc`:
+        ```bash
+        export PATH="$HOME/.composer/vendor/bin:$PATH"
+        ```
+
+    === "Windows"
+
+        Добавьте в системную переменную `PATH`:
+        ```
+        %USERPROFILE%\AppData\Roaming\Composer\vendor\bin
+        ```
+
+## Локальная установка
 
 ```bash
 composer require shevartv/modx-builder --dev
 ```
 
-После установки CLI доступен как:
+Команда вызывается как `vendor/bin/modxapp`.
 
-```bash
-vendor/bin/modxapp
-```
-
-Для глобальной установки (команда `modxapp` доступна из любой директории):
-
-```bash
-composer global require shevartv/modx-builder
-modxapp
-```
-
-## Структура после установки
+## Структура проекта
 
 Package Builder работает с двумя директориями:
 
 ```
-core/components/mypackage/    — исходники компонента
+core/components/<name>/              — исходники компонента
 ├── bootstrap.php
 ├── composer.json
 ├── docs/
 ├── lexicon/
 ├── schema/
 ├── src/
-└── elements/                 — файлы элементов (опционально)
+└── elements/                        — файлы элементов (опционально)
 
-package_builder/packages/mypackage/   — конфигурация сборки
+package_builder/packages/<name>/     — конфигурация сборки
 ├── config.php
-└── elements/
-    ├── chunks.php
-    ├── snippets.php
-    ├── plugins.php
-    └── ...
+├── elements/                        — описание элементов для сборки
+│   ├── chunks.php
+│   ├── snippets.php
+│   ├── plugins.php
+│   └── ...
+└── resolvers/                       — скрипты установки/обновления/удаления
 ```
-
-## Создание первого пакета
-
-### Интерактивный режим
-
-```bash
-modxapp create mypackage --interactive
-```
-
-Мастер задаст вопросы:
-
-| Вопрос | Обязательный | По умолчанию |
-|--------|:------------:|-------------|
-| Имя пакета | да | — |
-| Краткое имя (для лексиконов и настроек) | нет | первые 3 символа имени |
-| Имя автора | нет | из глобального конфига |
-| Email | нет | из глобального конфига |
-| Git логин | нет | из глобального конфига |
-| Минимальная версия PHP | нет | `8.1` |
-| URL репозитория | нет | — |
-| Генерировать файлы элементов | нет | `да` |
-| Добавить PHP CS Fixer (PSR-12) | нет | `нет` |
-| Добавить ESLint для JS | нет | `нет` |
-
-Если вы предварительно выполнили `modxapp config`, значения автора, email и Git логина подставятся автоматически — достаточно нажать Enter.
-
-Настройки берутся из локального конфига проекта (`modxapp.json`). Если его нет — создаётся автоматически из глобального конфига.
-
-### Через флаги
-
-Все доступные флаги:
-
-```bash
-modxapp create mypackage \
-    --author="Ivan Petrov" \
-    --email=ivan@example.com \
-    --gitlogin=ivanpetrov \
-    --short-name=my \
-    --php-version=8.1 \
-    --repository=https://github.com/ivanpetrov/mypackage \
-    --template=./my-templates \
-    --tools-config=./my-tool-configs \
-    --elements \
-    --php-cs-fixer \
-    --eslint
-```
-
-| Флаг | Описание |
-|------|----------|
-| `--author=` | Имя автора |
-| `--email=` | Email автора |
-| `--gitlogin=` | Git username (GitHub/GitLab) |
-| `--short-name=` | Краткое имя для лексиконов и настроек |
-| `--php-version=` | Минимальная версия PHP (по умолчанию `8.1`) |
-| `--repository=` | URL репозитория |
-| `--template=` | Путь к [кастомным шаблонам](commands/templates.md) |
-| `--tools-config=` | Путь к [кастомным конфигам инструментов](tools.md#свои-конфиги-инструментов) |
-| `--elements` | Генерировать файлы элементов |
-| `--php-cs-fixer` | Добавить PHP CS Fixer (PSR-12) |
-| `--eslint` | Добавить ESLint для JS |
-| `--interactive` | Интерактивный режим |
-
-Все флаги необязательны — значения берутся из `modxapp.json` (или глобального конфига).
 
 ## Следующие шаги
 
-1. [Настройте конфигурацию пакета](configuration.md)
-2. [Создайте свои шаблоны](commands/templates.md) (опционально)
-3. [Опишите элементы](commands/elements.md)
-4. [Соберите пакет](commands/build.md)
+- [Быстрый старт](quickstart.md) — пошаговое руководство от установки до первого пакета
+- [Сценарии работы](workflows.md) — headless, файловая разработка, смешанная работа с админкой
