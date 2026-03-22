@@ -279,16 +279,12 @@ PHP;
             return;
         }
 
-        $cmd = escapeshellarg($composerBin) . ' install --no-dev --no-interaction --working-dir=' . escapeshellarg($dir) . ' 2>&1';
+        $phpBin = PHP_BINARY;
+        $cmd = escapeshellarg($phpBin) . ' ' . escapeshellarg($composerBin)
+            . ' install --no-dev --no-interaction --ignore-platform-reqs --working-dir=' . escapeshellarg($dir) . ' 2>&1';
         $output = [];
         $exitCode = 0;
         exec($cmd, $output, $exitCode);
-
-        if ($exitCode !== 0) {
-            $phpBin = PHP_BINARY;
-            $cmd = escapeshellarg($phpBin) . ' ' . escapeshellarg($composerBin) . ' install --no-dev --no-interaction --working-dir=' . escapeshellarg($dir) . ' 2>&1';
-            exec($cmd, $output, $exitCode);
-        }
 
         if ($exitCode === 0) {
             echo "  Dependencies installed\n";
