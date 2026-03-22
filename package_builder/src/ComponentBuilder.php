@@ -154,25 +154,35 @@ class ComponentBuilder
 
     private function findResolverFiles(array $packageConfig): array
     {
-        $resolversPath = $packageConfig['abs_core'] . 'resolvers/';
+        $searchPaths = [
+            getcwd() . '/package_builder/packages/' . $packageConfig['name_lower'] . '/resolvers/',
+            $packageConfig['abs_core'] . 'resolvers/',
+        ];
 
         if (!empty($packageConfig['resolvers_path'])) {
             $root = getcwd() . '/';
-            $resolversPath = $root . $packageConfig['resolvers_path'];
+            array_unshift($searchPaths, $root . $packageConfig['resolvers_path']);
         }
 
-        if (!is_dir($resolversPath)) {
-            return [];
+        $files = [];
+        foreach ($searchPaths as $resolversPath) {
+            if (!is_dir($resolversPath)) {
+                continue;
+            }
+
+            $found = array_filter(
+                scandir($resolversPath),
+                fn($f) => str_ends_with($f, '.php') && $f !== 'resolve.encryption.php'
+            );
+
+            foreach ($found as $f) {
+                $files[$f] = $resolversPath . $f;
+            }
         }
 
-        $files = array_filter(
-            scandir($resolversPath),
-            fn($f) => str_ends_with($f, '.php') && $f !== 'resolve.encryption.php'
-        );
+        ksort($files);
 
-        sort($files);
-
-        return array_map(fn($f) => $resolversPath . $f, $files);
+        return array_values($files);
     }
 
     public function build(string $packageName, array $buildOptions = []): bool
@@ -458,14 +468,25 @@ class ComponentBuilder
      */
     private function addResolvers($vehicle, array $packageConfig): void
     {
-        $resolversPath = $packageConfig['abs_core'] . 'resolvers/';
+        $searchPaths = [
+            getcwd() . '/package_builder/packages/' . $packageConfig['name_lower'] . '/resolvers/',
+            $packageConfig['abs_core'] . 'resolvers/',
+        ];
 
         if (!empty($packageConfig['resolvers_path'])) {
             $root = dirname(MODX_CORE_PATH) . '/';
-            $resolversPath = $root . $packageConfig['resolvers_path'];
+            array_unshift($searchPaths, $root . $packageConfig['resolvers_path']);
         }
 
-        if (!is_dir($resolversPath)) {
+        $resolversPath = null;
+        foreach ($searchPaths as $path) {
+            if (is_dir($path)) {
+                $resolversPath = $path;
+                break;
+            }
+        }
+
+        if (!$resolversPath) {
             return;
         }
 
