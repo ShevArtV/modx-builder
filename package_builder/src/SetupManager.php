@@ -53,7 +53,7 @@ class SetupManager
 
     public function downloadCore(): bool
     {
-        $releaseUrl = 'https://api.github.com/repos/modxcms/revolution/releases/latest';
+        $tagsUrl = 'https://api.github.com/repos/modxcms/revolution/tags?per_page=1';
 
         $context = stream_context_create([
             'http' => [
@@ -62,21 +62,26 @@ class SetupManager
             ],
         ]);
 
-        $response = @file_get_contents($releaseUrl, false, $context);
+        $response = @file_get_contents($tagsUrl, false, $context);
         if (!$response) {
-            echo "ERROR: Failed to fetch release info from GitHub\n";
+            echo "ERROR: Failed to fetch tags from GitHub\n";
             return false;
         }
 
-        $release = json_decode($response, true);
-        $zipUrl = $release['zipball_url'] ?? null;
+        $tags = json_decode($response, true);
+        if (empty($tags) || !is_array($tags)) {
+            echo "ERROR: No tags found\n";
+            return false;
+        }
+
+        $zipUrl = $tags[0]['zipball_url'] ?? null;
+        $tag = $tags[0]['name'] ?? 'unknown';
 
         if (!$zipUrl) {
             echo "ERROR: Could not find download URL\n";
             return false;
         }
 
-        $tag = $release['tag_name'] ?? 'unknown';
         echo "Downloading MODX {$tag}...\n";
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'modx_') . '.zip';
