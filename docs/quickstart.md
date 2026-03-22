@@ -37,7 +37,7 @@ modxapp create my-package --elements
 
 Будет создана стандартная структура компонента MODX 3:
 
-```
+```text
 core/components/my-package/
 ├── bootstrap.php              — точка входа
 ├── composer.json              — зависимости и скрипты
@@ -76,7 +76,7 @@ modxapp create my-shop --template=ecommerce
 - **Описание** (что собирать) — PHP-файлы в `package_builder/packages/<name>/elements/`
 - **Контент** (код, HTML) — файлы в `core/components/<name>/elements/`
 
-```
+```text
 package_builder/packages/my-package/
 └── elements/
     ├── chunks.php          — описание чанков
@@ -115,7 +115,7 @@ return [
 <p>Привет, [[+name]]!</p>
 ```
 
-Чтобы чанк был статичным (MODX читает из файла, а не из БД), в `config.php` пакета должно быть:
+Чтобы чанк был статичным (MODX читает из файла, а не из БД), в `package_builder/packages/<name>/config.php` должно быть:
 
 ```php
 'static' => [
@@ -154,7 +154,7 @@ return 'Hello from my snippet!';
 ```
 
 !!! tip "Статичные элементы"
-    Статичные элементы удобны при разработке — вы редактируете файл в IDE, и изменения сразу видны на сайте без пересборки пакета. Настройка `static` в `config.php` определяет какие типы элементов будут статичными.
+    Статичные элементы удобны при разработке — вы редактируете файл в IDE, и изменения сразу видны на сайте без пересборки пакета. Настройка `static` в `package_builder/packages/<name>/config.php` определяет какие типы элементов будут статичными.
 
 ### Плагины
 
@@ -174,6 +174,14 @@ return [
 ```
 
 Код плагина в `core/components/my-package/elements/plugins/myplugin.php`.
+
+Плагины тоже можно сделать статичными:
+
+```php
+'static' => [
+    'plugins' => true,
+],
+```
 
 ### Системные настройки
 

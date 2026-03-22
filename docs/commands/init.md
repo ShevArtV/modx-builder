@@ -1,25 +1,42 @@
 # init — Инициализация проекта
 
-Создаёт локальный конфиг `modxapp.json` в текущей директории. Значения по умолчанию берутся из глобального конфига.
+Создаёт локальный конфиг `modxapp.json` в текущей директории. По умолчанию копирует значения из глобального конфига без вопросов.
 
 ## Использование
 
 ```bash
-modxapp init
+modxapp init                    # создать modxapp.json из глобального конфига
+modxapp init --interactive      # с возможностью изменить каждый параметр
 ```
 
 ## Что происходит
 
-1. Загружаются значения из глобального конфига (если настроен через `modxapp config`)
-2. Для каждого параметра задаётся вопрос — можно принять значение по умолчанию (Enter) или ввести своё
-3. Создаётся файл `modxapp.json` в текущей директории
+**Без `--interactive`:**
+
+1. Копирует глобальный конфиг (`~/.modxapp/config.json`) в `modxapp.json`
+2. Готово — можно работать
+
+**С `--interactive`:**
+
+1. Загружает значения из глобального конфига как значения по умолчанию
+2. Для каждого параметра задаёт вопрос — можно принять (Enter) или ввести своё
+3. Создаёт `modxapp.json` с введёнными значениями
 
 Если `modxapp.json` уже существует, будет запрошено подтверждение на перезапись.
 
-## Пример
+## Примеры
+
+Быстрая инициализация:
 
 ```bash
 $ modxapp init
+SUCCESS: modxapp.json created from global config
+```
+
+Интерактивная — если нужно изменить параметры для этого проекта:
+
+```bash
+$ modxapp init --interactive
 
 === Package Builder Project Init ===
 Configure settings for this project. Press Enter to use defaults.
@@ -29,9 +46,9 @@ Author email [shev.art.v@ya.ru]:
 Git login [shevartv]:
 Minimum PHP version [8.1]:
 Repository URL [https://github.com/]:
-Templates path (leave empty for default):
+Templates path (leave empty for default): ./my-templates
 Generate elements files? [Y/n]:
-Add PHP CS Fixer? [y/N]:
+Add PHP CS Fixer? [y/N]: y
 Add ESLint? [y/N]:
 
 SUCCESS: modxapp.json created

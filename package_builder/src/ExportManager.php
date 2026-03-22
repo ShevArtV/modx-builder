@@ -17,11 +17,17 @@ use MODX\Revolution\modX;
 class ExportManager
 {
     private ?int $categoryId = null;
+    private bool $softMode = false;
 
     public function __construct(
         private readonly modX $modx,
         private readonly array $config
     ) {
+    }
+
+    public function setSoftMode(bool $soft): void
+    {
+        $this->softMode = $soft;
     }
 
     public function export(string $elementsPath, string $corePath): array
@@ -336,6 +342,18 @@ class ExportManager
         $dir = dirname($path);
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
+        }
+
+        if ($this->softMode && file_exists($path)) {
+            $existing = include $path;
+            if (is_array($existing)) {
+                foreach ($items as $key => $value) {
+                    if (!isset($existing[$key])) {
+                        $existing[$key] = $value;
+                    }
+                }
+                $items = $existing;
+            }
         }
 
         $content = "<?php\n\nreturn " . $this->arrayExport($items) . ";\n";

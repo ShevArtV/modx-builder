@@ -16,7 +16,7 @@ modxapp schema-extract mypackage
 
 Результат:
 
-```
+```text
 Extracted 3 tables to core/components/mypackage/schema/mypackage.mysql.schema.xml
 Classes generated
 ```
@@ -73,3 +73,6 @@ ALTER TABLE modx_mypackage_items COMMENT = 'MyItem';
 
 !!! tip "Проверьте результат"
     После извлечения откройте XML-схему и проверьте имена классов, типы полей и связи. Связи (`composite`/`aggregate`) между таблицами не извлекаются автоматически — их нужно добавить вручную.
+
+!!! warning "Повторное извлечение перезаписывает схему"
+    При повторном запуске `schema-extract` файл схемы перезаписывается полностью. Если вы добавляли связи (`composite`/`aggregate`) вручную — они будут потеряны. Сделайте резервную копию схемы перед повторным извлечением.

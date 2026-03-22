@@ -8,6 +8,8 @@
 modxapp extract-lexicons <name>
 ```
 
+`<name>` — имя пакета, указанное при `modxapp create`. Совпадает с именем папки в `package_builder/packages/` и `core/components/`.
+
 ## Пример
 
 ```bash
@@ -16,7 +18,7 @@ modxapp extract-lexicons mypackage
 
 ## Что делает
 
-1. Сканирует все PHP-файлы в `core/components/<name>/src/`
+1. Сканирует все PHP-файлы в `core/components/<name>/` (исключая `vendor/`)
 2. Находит вызовы `$modx->lexicon('key_name')`
 3. Генерирует файл `core/components/<name>/lexicon/en/default.inc.php`
 
@@ -44,7 +46,7 @@ $_lang['mypackage_success_saved'] = 'mypackage_success_saved';
 
 Рекомендуется использовать `snake_case` с префиксом пакета:
 
-```
+```text
 mypackage_error_not_found
 mypackage_btn_save
 mypackage_title_main

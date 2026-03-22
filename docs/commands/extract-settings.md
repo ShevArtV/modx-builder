@@ -8,6 +8,8 @@
 modxapp extract-settings <name>
 ```
 
+`<name>` — имя пакета, указанное при `modxapp create`. Совпадает с именем папки в `package_builder/packages/` и `core/components/`.
+
 ## Пример
 
 ```bash
@@ -16,7 +18,7 @@ modxapp extract-settings mypackage
 
 ## Что делает
 
-1. Сканирует все PHP-файлы в `core/components/<name>/src/`
+1. Сканирует все PHP-файлы в `core/components/<name>/` (исключая `vendor/`)
 2. Находит вызовы `$modx->getOption('prefix_setting_name')`
 3. Автоматически определяет тип настройки
 4. Генерирует `core/components/<name>/elements/settings.php`
@@ -34,22 +36,22 @@ modxapp extract-settings mypackage
 
 ## Автокатегоризация
 
-Настройки автоматически распределяются по областям (area):
+Область (area) определяется из структуры ключа. Формат: `prefix_area_key` — второй сегмент после префикса пакета становится area:
 
-| Паттерн имени | Область |
-|---------------|---------|
-| `*_path`, `*_dir` | `paths` |
-| `*_email` | `email` |
-| `*_cache`, `*_debug` | `system` |
-| Все остальные | `general` |
+| Ключ | Area |
+|------|------|
+| `mypkg_main_api_key` | `main` |
+| `mypkg_debug_mode` | `debug` |
+| `mypkg_email_from` | `email` |
+| `mypkg_timeout` | `general` (только два сегмента) |
 
 ## Результат
 
 Из кода:
 
 ```php
-$timeout = $modx->getOption('mypackage_api_timeout');
-$debug = $modx->getOption('mypackage_debug');
+$timeout = $modx->getOption('mypackage_main_timeout');
+$debug = $modx->getOption('mypackage_debug_mode');
 ```
 
 Будет сгенерирован:
@@ -57,19 +59,19 @@ $debug = $modx->getOption('mypackage_debug');
 ```php
 <?php
 return [
-    'mypackage_api_timeout' => [
-        'key' => 'mypackage_api_timeout',
+    'mypackage_main_timeout' => [
+        'key' => 'mypackage_main_timeout',
         'value' => '',
         'xtype' => 'textfield',
         'namespace' => 'mypackage',
-        'area' => 'general',
+        'area' => 'main',
     ],
-    'mypackage_debug' => [
-        'key' => 'mypackage_debug',
+    'mypackage_debug_mode' => [
+        'key' => 'mypackage_debug_mode',
         'value' => '',
         'xtype' => 'combo-boolean',
         'namespace' => 'mypackage',
-        'area' => 'system',
+        'area' => 'debug',
     ],
 ];
 ```

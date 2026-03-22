@@ -4,7 +4,7 @@
 
 ## Расположение
 
-```
+```text
 packages/<name>/.packignore
 ```
 
@@ -25,7 +25,7 @@ log[0-9].txt             # Классы символов
 
 Эти файлы и папки исключаются **всегда**, даже без `.packignore`:
 
-```
+```text
 .git/
 .gitignore
 .gitattributes

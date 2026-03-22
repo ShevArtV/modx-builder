@@ -26,9 +26,14 @@ class SettingsExtractor
         );
 
         foreach ($iterator as $file) {
-            if ($file->getExtension() === 'php') {
-                $this->extractFromFile($file->getPathname(), $packagePrefix);
+            if ($file->getExtension() !== 'php') {
+                continue;
             }
+            $path = $file->getPathname();
+            if (str_contains($path, '/vendor/') || str_contains($path, '\\vendor\\')) {
+                continue;
+            }
+            $this->extractFromFile($path, $packagePrefix);
         }
     }
 
@@ -201,16 +206,10 @@ class SettingsExtractor
      */
     private function categorizeSetting(string $key): string
     {
-        if (str_contains($key, '_path') || str_contains($key, '_dir')) {
-            return 'paths';
-        }
+        $parts = explode('_', $key);
 
-        if (str_contains($key, '_email')) {
-            return 'email';
-        }
-
-        if (str_contains($key, '_cache') || str_contains($key, '_debug')) {
-            return 'system';
+        if (count($parts) > 2) {
+            return $parts[1];
         }
 
         return 'general';

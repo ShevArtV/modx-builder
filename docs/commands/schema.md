@@ -13,7 +13,6 @@ modxapp schema <name> [options]
 | Опция | Описание |
 |-------|----------|
 | `--validate` | Только валидировать схему без генерации |
-| `--verbose` | Подробный вывод |
 
 ## Примеры
 
@@ -74,7 +73,7 @@ modxapp schema mypackage --validate
 
 Возвращает список ошибок или сообщение `Schema is valid`.
 
-## Настройки в config.php
+## Настройки в package_builder/packages/\<name\>/config.php
 
 ```php
 'schema' => [

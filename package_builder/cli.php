@@ -71,14 +71,48 @@ try {
                 }
             }
 
+            if ($cli->hasOption('export')) {
+                $root = getcwd() . '/';
+                $corePath = $root . ($packageConfig['paths']['core'] ?? 'core/components/' . $packageName . '/');
+                $elementsPath = getcwd() . '/package_builder/packages/' . $packageName . '/elements';
+
+                $builder = new ComponentBuilder($packageConfig);
+                $modx = $builder->getModx();
+
+                $exportManager = new ExportManager($modx, $packageConfig);
+                $exportManager->setSoftMode(true);
+                $results = $exportManager->export($elementsPath, $corePath);
+
+                $total = 0;
+                foreach ($results as $type => $count) {
+                    if ($count > 0) {
+                        echo "  Exported {$type}: {$count}\n";
+                        $total += $count;
+                    }
+                }
+                if ($total > 0) {
+                    echo "Exported {$total} elements before build\n";
+                }
+            }
+
+            $installFromConfig = !empty($packageConfig['build']['install']);
+            if ($cli->hasOption('install')) {
+                $doInstall = true;
+            } elseif ($cli->hasOption('no-install')) {
+                $doInstall = false;
+            } else {
+                $doInstall = $installFromConfig;
+            }
+
             $buildOptions = [
-                'install' => $cli->hasOption('install'),
-                'download' => $cli->hasOption('download'),
-                'encrypt' => $cli->hasOption('encrypt'),
+                'install' => $doInstall,
+                'no-encrypt' => $cli->hasOption('no-encrypt'),
                 'standalone' => $cli->hasOption('standalone'),
             ];
 
-            $builder = new ComponentBuilder($packageConfig);
+            if (!isset($builder)) {
+                $builder = new ComponentBuilder($packageConfig);
+            }
             $success = $builder->build($packageName, $buildOptions);
 
             if ($success) {
@@ -286,7 +320,7 @@ try {
 
             $root = getcwd() . '/';
             $corePath = $root . ($packageConfig['paths']['core'] ?? 'core/components/' . $packageName . '/');
-            $directory = $corePath . 'src/';
+            $directory = $corePath;
             $outputPath = $corePath . 'lexicon/en/default.inc.php';
 
             $extractor = new LexiconExtractor();
@@ -309,7 +343,7 @@ try {
 
             $root = getcwd() . '/';
             $corePath = $root . ($packageConfig['paths']['core'] ?? 'core/components/' . $packageName . '/');
-            $directory = $corePath . 'src/';
+            $directory = $corePath;
             $outputPath = $corePath . 'elements/settings.php';
 
             $settingsPrefix = $packageConfig['name_short'] ?? $packageConfig['name_lower'];
@@ -394,25 +428,29 @@ try {
                 }
             }
 
-            echo "\n=== Package Builder Project Init ===\n";
-            echo "Configure settings for this project. Press Enter to use defaults.\n\n";
-
             $globalConfig = $cli->loadUserConfig();
 
-            $localConfig = [];
-            $localConfig['author'] = $cli->prompt('Author name', $globalConfig['author'] ?? 'Your Name');
-            $localConfig['email'] = $cli->prompt('Author email', $globalConfig['email'] ?? 'your-email@example.com');
-            $localConfig['gitlogin'] = $cli->prompt('Git login', $globalConfig['gitlogin'] ?? 'your-username');
-            $localConfig['phpVersion'] = $cli->prompt('Minimum PHP version', $globalConfig['phpVersion'] ?? '8.1');
-            $localConfig['repository'] = $cli->prompt('Repository URL', $globalConfig['repository'] ?? '');
-            $localConfig['template'] = $cli->prompt('Templates path (leave empty for default)', $globalConfig['template'] ?? '');
-            $localConfig['generateElements'] = $cli->promptYesNo('Generate elements files?', $globalConfig['generateElements'] ?? true);
-            $localConfig['phpCsFixer'] = $cli->promptYesNo('Add PHP CS Fixer?', $globalConfig['phpCsFixer'] ?? false);
-            $localConfig['eslint'] = $cli->promptYesNo('Add ESLint?', $globalConfig['eslint'] ?? false);
-            $localConfig['toolsConfigPath'] = $cli->prompt('Path to custom tool configs', $globalConfig['toolsConfigPath'] ?? '');
+            if ($cli->hasOption('interactive')) {
+                echo "\n=== Package Builder Project Init ===\n";
+                echo "Configure settings for this project. Press Enter to use defaults.\n\n";
+
+                $localConfig = [];
+                $localConfig['author'] = $cli->prompt('Author name', $globalConfig['author'] ?? 'Your Name');
+                $localConfig['email'] = $cli->prompt('Author email', $globalConfig['email'] ?? 'your-email@example.com');
+                $localConfig['gitlogin'] = $cli->prompt('Git login', $globalConfig['gitlogin'] ?? 'your-username');
+                $localConfig['phpVersion'] = $cli->prompt('Minimum PHP version', $globalConfig['phpVersion'] ?? '8.1');
+                $localConfig['repository'] = $cli->prompt('Repository URL', $globalConfig['repository'] ?? '');
+                $localConfig['template'] = $cli->prompt('Templates path (leave empty for default)', $globalConfig['template'] ?? '');
+                $localConfig['generateElements'] = $cli->promptYesNo('Generate elements files?', $globalConfig['generateElements'] ?? true);
+                $localConfig['phpCsFixer'] = $cli->promptYesNo('Add PHP CS Fixer?', $globalConfig['phpCsFixer'] ?? false);
+                $localConfig['eslint'] = $cli->promptYesNo('Add ESLint?', $globalConfig['eslint'] ?? false);
+                $localConfig['toolsConfigPath'] = $cli->prompt('Path to custom tool configs', $globalConfig['toolsConfigPath'] ?? '');
+            } else {
+                $localConfig = $globalConfig;
+            }
 
             $cli->saveLocalConfig($localConfig);
-            echo "\nSUCCESS: modxapp.json created\n";
+            echo "SUCCESS: modxapp.json created" . ($cli->hasOption('interactive') ? '' : ' from global config') . "\n";
             break;
 
         case 'setup':

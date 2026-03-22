@@ -25,9 +25,14 @@ class LexiconExtractor
         );
 
         foreach ($iterator as $file) {
-            if ($file->getExtension() === 'php') {
-                $this->extractFromFile($file->getPathname());
+            if ($file->getExtension() !== 'php') {
+                continue;
             }
+            $path = $file->getPathname();
+            if (str_contains($path, '/vendor/') || str_contains($path, '\\vendor\\')) {
+                continue;
+            }
+            $this->extractFromFile($path);
         }
     }
 

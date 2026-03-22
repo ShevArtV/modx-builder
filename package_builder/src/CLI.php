@@ -10,7 +10,11 @@ class CLI
 
     public function __construct(array $argv)
     {
-        $this->userConfigPath = dirname(__FILE__, 2) . '/user.config.json';
+        $configDir = ($_SERVER['HOME'] ?? getenv('HOME') ?? getenv('USERPROFILE')) . '/.modxapp';
+        if (!is_dir($configDir)) {
+            mkdir($configDir, 0755, true);
+        }
+        $this->userConfigPath = $configDir . '/config.json';
         array_shift($argv);
         $this->parseArguments($argv);
     }

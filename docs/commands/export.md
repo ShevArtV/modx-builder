@@ -22,7 +22,7 @@ modxapp export mypackage
 
 Результат:
 
-```
+```text
   chunks: 3
   snippets: 2
   plugins: 1
@@ -45,13 +45,13 @@ SUCCESS: Exported 11 elements for mypackage
 
 ## Как работает поиск
 
-- **Chunks, snippets, plugins, templates, TV** — ищутся по категории, указанной в `config.php` → `elements.category`
-- **Settings, menus** — ищутся по namespace = `name_lower` из `config.php`
+- **Chunks, snippets, plugins, templates, TV** — ищутся по категории, указанной в `package_builder/packages/<name>/config.php` → `elements.category`
+- **Settings, menus** — ищутся по namespace = `name_lower` из `package_builder/packages/<name>/config.php`
 - **Events** — ищутся кастомные события (service=6), содержащие имя пакета
 
 ## Структура после export
 
-```
+```text
 core/components/mypackage/
 └── elements/
     ├── chunks/

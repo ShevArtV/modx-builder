@@ -49,9 +49,9 @@ nav:
     - schema: commands/schema.md
     - schema-extract: commands/schema-extract.md
     - elements: commands/elements.md
+    - export: commands/export.md
     - extract-lexicons: commands/extract-lexicons.md
     - extract-settings: commands/extract-settings.md
-    - export: commands/export.md
     - templates: commands/templates.md
   - Конфигурация: configuration.md
   - Инструменты: tools.md

@@ -16,60 +16,132 @@ modxapp elements mypackage
 
 ## Поддерживаемые типы
 
-Команда сканирует папку `elements/` и обрабатывает файлы:
+Команда сканирует папку `package_builder/packages/<name>/elements/` и обрабатывает файлы:
 
-| Файл | Элемент MODX |
-|------|-------------|
-| `chunks.php` | Чанки |
-| `snippets.php` | Сниппеты |
-| `plugins.php` | Плагины + события |
-| `templates.php` | Шаблоны |
-| `tvs.php` | TV-параметры |
-| `settings.php` | Системные настройки |
-| `menus.php` | Пункты меню админки |
-| `events.php` | Кастомные события |
+| Файл | Элемент MODX | Описание |
+|------|-------------|----------|
+| `chunks.php` | Chunks | Компоненты шаблонов |
+| `snippets.php` | Snippets | PHP-сниппеты |
+| `plugins.php` | Plugins | Плагины с привязкой к событиям |
+| `templates.php` | Templates | Шаблоны страниц |
+| `tvs.php` | TV | Дополнительные поля (Template Variables) |
+| `settings.php` | Settings | Системные настройки |
+| `menus.php` | Menus | Пункты меню админки |
+| `events.php` | Events | Кастомные события |
+| `policies.php` | Policies | Политики доступа |
+| `policyTemplates.php` | Policy Templates | Шаблоны политик |
 
 ## Формат файлов элементов
 
 ### Чанки
 
+Контент чанка хранится в отдельном файле `core/components/<name>/elements/chunks/`.
+
 ```php
-// elements/chunks.php
+<?php
+// package_builder/packages/mypackage/elements/chunks.php
 return [
-    [
-        'name' => 'myChunk',
-        'description' => 'My chunk',
-        'file' => 'elements/chunks/mychunk.chunk.tpl',
+    'tpl.mypackage.hello' => [
+        'description' => 'Приветственный чанк',
+        'content' => 'file:elements/chunks/hello.tpl',
     ],
 ];
+```
+
+```html
+<!-- core/components/mypackage/elements/chunks/hello.tpl -->
+<p>Привет, [[+name]]!</p>
 ```
 
 ### Сниппеты
 
+Код сниппета в файле `core/components/<name>/elements/snippets/`.
+
 ```php
-// elements/snippets.php
+<?php
+// package_builder/packages/mypackage/elements/snippets.php
 return [
-    [
-        'name' => 'mySnippet',
-        'description' => 'My snippet',
-        'file' => 'elements/snippets/mysnippet.snippet.php',
+    'mySnippet' => [
+        'file' => 'mysnippet.php',
+        'description' => 'Мой сниппет',
+        'properties' => [
+            'limit' => [
+                'type' => 'textfield',
+                'value' => '10',
+                'desc' => 'Количество результатов',
+            ],
+        ],
     ],
 ];
 ```
 
+```php
+<?php
+// core/components/mypackage/elements/snippets/mysnippet.php
+return 'Hello from snippet!';
+```
+
 ### Плагины
 
+Код плагина в файле `core/components/<name>/elements/plugins/`.
+
 ```php
-// elements/plugins.php
+<?php
+// package_builder/packages/mypackage/elements/plugins.php
 return [
-    [
-        'name' => 'myPlugin',
-        'description' => 'My plugin',
-        'file' => 'elements/plugins/switch.php',
+    'myPlugin' => [
+        'file' => 'myplugin.php',
+        'description' => 'Мой плагин',
         'events' => [
             'OnPageNotFound' => [],
-            'OnHandleRequest' => ['priority' => 0],
+            'OnLoadWebDocument' => ['priority' => 0],
         ],
+    ],
+];
+```
+
+### Шаблоны
+
+Контент шаблона в файле `core/components/<name>/elements/templates/`.
+
+```php
+<?php
+// package_builder/packages/mypackage/elements/templates.php
+return [
+    'myTemplate' => [
+        'description' => 'Основной шаблон',
+        'content' => 'file:elements/templates/mytemplate.tpl',
+    ],
+];
+```
+
+```html
+<!-- core/components/mypackage/elements/templates/mytemplate.tpl -->
+<!DOCTYPE html>
+<html>
+<head><title>[[*pagetitle]]</title></head>
+<body>[[*content]]</body>
+</html>
+```
+
+### TV-параметры
+
+```php
+<?php
+// package_builder/packages/mypackage/elements/tvs.php
+return [
+    'my_image' => [
+        'caption' => 'Изображение',
+        'description' => 'Основное изображение',
+        'type' => 'image',
+        'default' => '',
+        'elements' => '',
+    ],
+    'my_color' => [
+        'caption' => 'Цвет',
+        'description' => 'Цвет элемента',
+        'type' => 'text',
+        'default' => '#000000',
     ],
 ];
 ```
@@ -77,14 +149,18 @@ return [
 ### Системные настройки
 
 ```php
-// elements/settings.php
+<?php
+// package_builder/packages/mypackage/elements/settings.php
 return [
-    [
-        'key' => 'mypackage_api_key',
+    'mypackage_api_key' => [
         'value' => '',
         'xtype' => 'textfield',
-        'namespace' => 'mypackage',
         'area' => 'general',
+    ],
+    'mypackage_debug' => [
+        'value' => '0',
+        'xtype' => 'combo-boolean',
+        'area' => 'system',
     ],
 ];
 ```
@@ -92,32 +168,102 @@ return [
 ### Меню
 
 ```php
-// elements/menus.php
+<?php
+// package_builder/packages/mypackage/elements/menus.php
 return [
-    [
-        'text' => 'mypackage',
-        'description' => 'mypackage_desc',
-        'parent' => 'components',
+    'mypackage' => [
+        'description' => 'mypackage_menu_desc',
         'action' => 'home',
-        'namespace' => 'mypackage',
+        'parent' => 'components',
     ],
 ];
 ```
 
-## Поддерживаемые элементы
+### События
 
-| Элемент | Описание |
-|---------|----------|
-| Chunks | Компоненты шаблонов |
-| Snippets | PHP-сниппеты |
-| Plugins | Плагины с привязкой к событиям |
-| Templates | Шаблоны страниц |
-| TV | Дополнительные поля |
-| Settings | Системные настройки |
-| Menus | Пункты меню админки |
-| Events | Кастомные события |
-| Policies | Политики доступа |
-| Policy Templates | Шаблоны политик |
+```php
+<?php
+// package_builder/packages/mypackage/elements/events.php
+return [
+    'OnMyPackageBeforeSave',
+    'OnMyPackageAfterSave',
+];
+```
+
+### Политики доступа
+
+Политика — набор разрешений, которые можно назначить группе пользователей. Поле `data` содержит разрешения и их значения.
+
+```php
+<?php
+// package_builder/packages/mypackage/elements/policies.php
+return [
+    'mypackageManagerPolicy' => [
+        'description' => 'Политика для менеджеров mypackage',
+        'data' => [
+            'mypackage_view' => true,
+            'mypackage_edit' => true,
+            'mypackage_save' => true,
+            'mypackage_delete' => false,
+            'mypackage_list' => true,
+        ],
+    ],
+];
+```
+
+### Шаблоны политик доступа
+
+Шаблон политики определяет набор доступных разрешений. Политики создаются на основе шаблонов — шаблон описывает *какие* разрешения возможны, а политика — *какие* из них включены.
+
+```php
+<?php
+// package_builder/packages/mypackage/elements/policyTemplates.php
+return [
+    'mypackageManagerPolicyTemplate' => [
+        'description' => 'Шаблон политики для менеджеров mypackage',
+        'permissions' => [
+            'mypackage_view' => [
+                'description' => 'Просмотр элементов',
+                'value' => true,
+            ],
+            'mypackage_edit' => [
+                'description' => 'Редактирование элементов',
+                'value' => true,
+            ],
+            'mypackage_save' => [
+                'description' => 'Сохранение элементов',
+                'value' => true,
+            ],
+            'mypackage_delete' => [
+                'description' => 'Удаление элементов',
+                'value' => true,
+            ],
+            'mypackage_list' => [
+                'description' => 'Вывод списка элементов',
+                'value' => true,
+            ],
+        ],
+    ],
+];
+```
+
+## Статичные элементы
+
+Статичные элементы хранят контент в файлах — MODX читает его напрямую, а не из БД. Это удобно при разработке: редактируете файл в IDE, изменения видны сразу без пересборки.
+
+Настройка в `package_builder/packages/<name>/config.php`:
+
+```php
+<?php
+'static' => [
+    'chunks' => true,      // чанки из файлов
+    'snippets' => true,    // сниппеты из файлов
+    'plugins' => true,     // плагины из файлов
+    'templates' => true,   // шаблоны из файлов
+],
+```
+
+Для статичных элементов контент указывается через `file:` (чанки, шаблоны) или `file` (сниппеты, плагины) — сборщик сохранит путь к файлу в `static_file`, и MODX будет читать контент из него.
 
 ## Логика работы
 

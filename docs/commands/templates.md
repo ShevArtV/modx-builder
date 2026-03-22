@@ -1,84 +1,94 @@
 # templates — Управление шаблонами
 
-Позволяет просматривать и копировать оригинальные шаблоны для кастомизации.
+Позволяет просматривать, создавать и управлять шаблонами структуры пакетов.
 
 ## Использование
 
 ```bash
-modxapp templates path              # показать путь к оригинальным шаблонам
-modxapp templates copy <path>       # скопировать шаблоны в указанную папку
+modxapp templates path              # показать путь к шаблону default
+modxapp templates list              # список доступных шаблонов
+modxapp templates copy <name>       # скопировать default в новый шаблон
 ```
 
 ## Примеры
 
 ```bash
-# Узнать, где лежат оригинальные шаблоны
-modxapp templates path
+# Список доступных шаблонов
+modxapp templates list
 
-# Скопировать для кастомизации
-modxapp templates copy ./my-templates
+# Создать кастомный шаблон на основе default
+modxapp templates copy ecommerce
+
+# Скопировать во внешнюю папку
+modxapp templates copy ./external-templates
 ```
 
-## Кастомные шаблоны
+## Как работают шаблоны
 
-### Workflow
+Шаблоны хранятся в `package_builder/templates/`. Каждый шаблон — это папка с именем, повторяющая структуру MODX:
+
+```text
+package_builder/templates/
+├── default/                              — встроенный шаблон
+│   ├── core/components/                  → core/components/<name>/
+│   ├── assets/components/                → assets/components/<name>/
+│   └── package_builder/packages/         → package_builder/packages/<name>/
+├── ecommerce/                            — кастомный шаблон
+│   ├── core/components/
+│   ├── assets/components/
+│   └── package_builder/packages/
+└── blog/                                 — ещё один кастомный
+    └── ...
+```
+
+При `modxapp templates copy <name>`:
+
+- Если `<name>` — простое имя (без `/`) — шаблон создаётся в `package_builder/templates/<name>/`
+- Если `<name>` — путь (содержит `/`) — шаблон копируется по указанному пути
+
+## Использование при создании пакета
 
 ```bash
-# 1. Скопировать оригинальные шаблоны
-modxapp templates copy ./my-templates
+# Использовать шаблон по имени
+modxapp create my-shop --template=ecommerce
 
-# 2. Отредактировать под свои нужды
-#    ./my-templates/components/   — шаблоны компонента
-#    ./my-templates/packages/     — шаблоны конфигурации
-
-# 3. Создать пакет из своих шаблонов
-modxapp create mypackage --template=./my-templates
+# По умолчанию — шаблон default
+modxapp create my-tool
 ```
 
-### Использование при создании пакета
+Шаблон ищется по приоритету:
 
-Через флаг:
+1. `package_builder/templates/<name>/` — в проекте
+2. Встроенные шаблоны Package Builder
+3. Как абсолютный/относительный путь
+
+Путь к шаблону можно задать в `modxapp.json` (через `modxapp init --interactive`) — тогда указывать `--template` при каждом `create` не нужно.
+
+## Workflow
 
 ```bash
-modxapp create mypackage --template=./my-templates
+# 1. Создать кастомный шаблон
+modxapp templates copy ecommerce
+
+# 2. Отредактировать
+#    package_builder/templates/ecommerce/core/components/   — файлы компонента
+#    package_builder/templates/ecommerce/assets/components/  — JS, CSS
+#    package_builder/templates/ecommerce/package_builder/packages/ — конфиг
+
+# 3. Создать пакеты с разными шаблонами
+modxapp create my-shop --template=ecommerce
+modxapp create my-blog --template=blog
+modxapp create my-tool                        # → default
 ```
 
-В интерактивном режиме — будет задан вопрос:
-
-```
-Custom templates path (leave empty for default):
-```
-
-Если ввести путь, он сохранится в `user.config.json` и будет использоваться по умолчанию при следующих запусках — без необходимости указывать `--template` каждый раз.
-
-Без `--template` и без сохранённого пути используются оригинальные шаблоны из пакета.
-
-### Структура папки шаблонов
-
-```
-my-templates/
-├── components/               — шаблоны для core/components/<name>/
-│   ├── bootstrap.php.template
-│   ├── composer.json.template
-│   ├── phpstan.neon.template
-│   ├── docs/
-│   ├── lexicon/
-│   ├── schema/
-│   ├── src/
-│   └── elements/
-└── packages/                 — шаблоны для packages/<name>/
-    ├── config.php.template
-    └── elements/
-```
-
-### Плейсхолдеры в шаблонах
+## Плейсхолдеры в шаблонах
 
 Файлы с расширением `.template` обрабатываются — в них заменяются плейсхолдеры:
 
 | Плейсхолдер | Значение |
 |-------------|----------|
 | `{{package_name}}` | Имя в lowercase |
-| `{{Package_name}}` | Имя с заглавной |
+| `{{Package_name}}` | Имя в PascalCase |
 | `{{short_name}}` | Краткое имя |
 | `{{author_name}}` | Имя автора |
 | `{{author_email}}` | Email автора |
@@ -89,11 +99,3 @@ my-templates/
 | `{{current_date}}` | Текущая дата |
 
 Файлы без `.template` копируются как есть.
-
-!!! tip "Разные шаблоны для разных пакетов"
-    Можно создать несколько наборов шаблонов и указывать нужный при создании:
-    ```bash
-    modxapp create shop --template=./templates/ecommerce
-    modxapp create blog --template=./templates/content
-    modxapp create api  --template=./templates/headless
-    ```

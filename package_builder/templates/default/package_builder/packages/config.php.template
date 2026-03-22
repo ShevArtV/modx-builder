@@ -36,9 +36,10 @@ return [
     ],
     
     'tools' => [
-        'phpCsFixer' => false,
-        'eslint' => false,
-        'csFixerMode' => 'fix',
+        'analyse' => 'vendor/bin/phpstan analyse --no-progress',
+        'cs' => '',
+        'lint' => '',
+        'csMode' => 'fix',
     ],
 
     'build' => [

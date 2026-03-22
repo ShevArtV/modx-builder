@@ -63,38 +63,6 @@ composer require shevartv/modx-builder --dev
 
 Команда вызывается как `vendor/bin/modxapp`.
 
-## Структура проекта
-
-После выполнения `modxapp setup` и `modxapp create <name>` в рабочей директории создаётся следующая структура:
-
-```
-core/components/<name>/              — исходники компонента
-├── bootstrap.php
-├── composer.json
-├── docs/
-├── lexicon/
-├── schema/
-├── src/
-└── elements/                        — файлы элементов (опционально)
-
-assets/components/<name>/            — публичные файлы (JS, CSS)
-├── css/
-│   ├── mgr/                         — стили для админки
-│   └── web/                         — стили для фронтенда
-└── js/
-    ├── mgr/                         — скрипты для админки
-    └── web/                         — скрипты для фронтенда
-
-package_builder/packages/<name>/     — конфигурация сборки
-├── config.php
-├── elements/                        — описание элементов для сборки
-│   ├── chunks.php
-│   ├── snippets.php
-│   ├── plugins.php
-│   └── ...
-└── resolvers/                       — скрипты установки/обновления/удаления
-```
-
 ## Следующие шаги
 
 - [Быстрый старт](quickstart.md) — пошаговое руководство от установки до первого пакета

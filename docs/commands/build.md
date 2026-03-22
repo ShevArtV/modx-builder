@@ -12,11 +12,14 @@ modxapp build <name> [options]
 
 | Опция | Описание |
 |-------|----------|
-| `--install` | Установить пакет после сборки |
-| `--download` | Скачать transport.zip (только web-режим) |
-| `--encrypt` | Зашифровать пакет через modstore.pro API |
+| `--install` | Установить пакет после сборки (даже если в конфиге `install = false`) |
+| `--no-install` | Не устанавливать (даже если в конфиге `install = true`) |
+| `--export` | Извлечь элементы из БД перед сборкой (мягкий режим — не перезаписывает существующие) |
+| `--no-encrypt` | Собрать без шифрования (если в конфиге `encrypt.enable = true`). Файл получит постфикс `-ne` |
+| `--standalone` | Принудительно использовать standalone-сборщик |
 | `--no-check` | Пропустить проверки PHPStan/CS Fixer/ESLint |
-| `--verbose` | Подробный вывод |
+
+Флаги командной строки всегда приоритетнее конфига.
 
 ## Примеры
 
@@ -27,19 +30,26 @@ modxapp build mypackage
 # Собрать и установить
 modxapp build mypackage --install
 
-# Собрать с шифрованием
-modxapp build mypackage --encrypt
+# Собрать без шифрования (для тестирования)
+# Результат: mypackage-1.0.0-pl-ne.transport.zip
+modxapp build mypackage --no-encrypt
 
-# Через web
-# http://site.ru/build_web.php?package=mypackage&install&download
+# Пропустить проверки
+modxapp build mypackage --no-check
+
+# Извлечь элементы из БД и собрать
+modxapp build mypackage --export
 ```
+
+!!! note "Мягкий режим --export"
+    При `--export` элементы из БД добавляются в файлы, но **не перезаписывают** уже описанные. Если элемент уже есть в файле — используется файловая версия. Новые элементы из БД дописываются.
 
 ## Проверки перед сборкой
 
 Перед сборкой автоматически запускаются проверки качества кода (если инструменты установлены):
 
 1. **PHPStan** — статический анализ
-2. **PHP CS Fixer** — проверка или автоисправление стиля (режим настраивается в `config.php`)
+2. **PHP CS Fixer** — проверка или автоисправление стиля (режим настраивается в `package_builder/packages/<name>/config.php`)
 3. **ESLint** — проверка JavaScript
 
 Если проверка не прошла — сборка прерывается. Используйте `--no-check` для пропуска.
@@ -56,49 +66,10 @@ modxapp build mypackage --encrypt
 6. Копирует файлы `core/` и `assets/` с фильтрацией по `.packignore`
 7. Добавляет резолверы
 8. Упаковывает в `core/packages/<name>-<version>-<release>.transport.zip`
-9. Устанавливает или предлагает скачать (если указаны флаги)
+9. Устанавливает пакет (если указан `--install`)
 
-## Обработка элементов
-
-Элементы описываются в файлах `packages/<name>/elements/`:
-
-```php
-// elements/snippets.php
-return [
-    [
-        'name' => 'mySnippet',
-        'description' => 'My snippet description',
-        'file' => 'elements/snippets/mysnippet.snippet.php',
-    ],
-];
-```
-
-```php
-// elements/plugins.php
-return [
-    [
-        'name' => 'myPlugin',
-        'description' => 'My plugin',
-        'file' => 'elements/plugins/switch.php',
-        'events' => [
-            'OnPageNotFound' => [],
-            'OnHandleRequest' => ['priority' => 0],
-        ],
-    ],
-];
-```
 
 ## Фильтрация файлов
 
 При копировании файлов в transport-пакет применяется фильтрация через [.packignore](../packignore.md). Технические файлы (PHPStan, ESLint, node_modules и т.д.) исключаются автоматически.
 
-## Web-режим
-
-Для серверов без CLI PHP 8 доступна web-сборка:
-
-```
-build_web.php?package=mypackage
-build_web.php?package=mypackage&install
-build_web.php?package=mypackage&download
-build_web.php?package=mypackage&encrypt
-```

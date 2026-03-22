@@ -50,7 +50,7 @@ modxapp build mypackage
 
 ## Структура после setup
 
-```
+```text
 my-project/
 ├── core/                          — ядро MODX 3 (скачивается)
 │   ├── config/

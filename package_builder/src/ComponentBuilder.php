@@ -187,13 +187,22 @@ class ComponentBuilder
             return false;
         }
 
+        $encryptEnabled = !empty($packageConfig['encrypt']['enable']);
+        $noEncrypt = !empty($buildOptions['no-encrypt']);
+        $encrypt = $encryptEnabled && !$noEncrypt;
+
+        $release = $packageConfig['release'];
+        if ($noEncrypt && $encryptEnabled) {
+            $release .= '-ne';
+        }
+
         $this->modx->log(modX::LOG_LEVEL_INFO, "Building package: {$packageName}");
 
         $this->builder = new modPackageBuilder($this->modx);
         $this->builder->createPackage(
             $packageConfig['name_lower'],
             $packageConfig['version'],
-            $packageConfig['release']
+            $release
         );
 
         $this->builder->registerNamespace(
@@ -203,9 +212,7 @@ class ComponentBuilder
             '{core_path}components/' . $packageConfig['name_lower'] . '/'
         );
 
-        $encrypt = !empty($packageConfig['encrypt']) || !empty($buildOptions['encrypt']);
         $encryptionReady = false;
-
         if ($encrypt) {
             $encryptionReady = $this->setupEncryption($packageConfig);
         }

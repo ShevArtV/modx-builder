@@ -8,6 +8,12 @@ class ToolsChecker
     private array $config;
     private array $errors = [];
 
+    private const DEFAULTS = [
+        'analyse' => 'vendor/bin/phpstan analyse --no-progress',
+        'cs' => 'vendor/bin/php-cs-fixer fix',
+        'lint' => 'node_modules/.bin/eslint assets/',
+    ];
+
     public function __construct(string $corePath, array $packageConfig)
     {
         $this->corePath = rtrim($corePath, '/');
@@ -18,24 +24,35 @@ class ToolsChecker
     {
         $this->errors = [];
         $passed = true;
-
-        if ($this->hasComposerDependency('phpstan/phpstan')) {
-            if (!$this->runPhpStan()) {
-                $passed = false;
-            }
-        }
-
         $tools = $this->config['tools'] ?? [];
 
-        if (!empty($tools['phpCsFixer']) && $this->hasComposerDependency('friendsofphp/php-cs-fixer')) {
-            $mode = $tools['csFixerMode'] ?? 'fix';
-            if (!$this->runCsFixer($mode)) {
+        $analyseCmd = $tools['analyse'] ?? self::DEFAULTS['analyse'];
+        if (!empty($analyseCmd)) {
+            if (!$this->runTool('analyse', $analyseCmd)) {
                 $passed = false;
             }
         }
 
-        if (!empty($tools['eslint']) && file_exists($this->corePath . '/eslint.config.js')) {
-            if (!$this->runEslint()) {
+        $csCmd = $tools['cs'] ?? '';
+        if (empty($csCmd) && !empty($tools['phpCsFixer'])) {
+            $csCmd = self::DEFAULTS['cs'];
+        }
+        if (!empty($csCmd)) {
+            $mode = $tools['csMode'] ?? $tools['csFixerMode'] ?? 'fix';
+            if ($mode === 'check' && str_contains($csCmd, 'php-cs-fixer')) {
+                $csCmd .= ' --dry-run --diff';
+            }
+            if (!$this->runTool('cs', $csCmd, $mode === 'fix')) {
+                $passed = false;
+            }
+        }
+
+        $lintCmd = $tools['lint'] ?? '';
+        if (empty($lintCmd) && !empty($tools['eslint'])) {
+            $lintCmd = self::DEFAULTS['lint'];
+        }
+        if (!empty($lintCmd)) {
+            if (!$this->runTool('lint', $lintCmd)) {
                 $passed = false;
             }
         }
@@ -48,124 +65,47 @@ class ToolsChecker
         return $this->errors;
     }
 
-    private function runPhpStan(): bool
+    private function runTool(string $name, string $command, bool $allowFailure = false): bool
     {
-        $configFile = $this->corePath . '/phpstan.neon';
+        $labels = [
+            'analyse' => 'Static analysis',
+            'cs' => 'Code style',
+            'lint' => 'Linting',
+        ];
 
-        if (!file_exists($configFile)) {
+        $label = $labels[$name] ?? $name;
+        echo "\nRunning {$label}...\n";
+
+        $bin = explode(' ', $command)[0];
+        $binPath = $this->corePath . '/' . $bin;
+
+        if (!file_exists($binPath) && !$this->isGlobalCommand($bin)) {
+            echo "  {$bin} not installed, skipping\n";
             return true;
-        }
-
-        echo "\nRunning PHPStan...\n";
-
-        $bin = $this->corePath . '/vendor/bin/phpstan';
-
-        if (!file_exists($bin)) {
-            echo "  PHPStan not installed, skipping (run 'composer install' in {$this->corePath})\n";
-            return true;
-        }
-
-        $cmd = escapeshellarg($bin) . ' analyse --no-progress --configuration=' . escapeshellarg($configFile);
-        $output = [];
-        $exitCode = 0;
-
-        exec("cd " . escapeshellarg($this->corePath) . " && {$cmd} 2>&1", $output, $exitCode);
-
-        $outputStr = implode("\n", $output);
-        echo $outputStr . "\n";
-
-        if ($exitCode !== 0) {
-            $this->errors[] = 'PHPStan found errors';
-            return false;
-        }
-
-        echo "  PHPStan: OK\n";
-        return true;
-    }
-
-    private function runCsFixer(string $mode): bool
-    {
-        $configFile = $this->corePath . '/.php-cs-fixer.dist.php';
-
-        if (!file_exists($configFile)) {
-            return true;
-        }
-
-        $bin = $this->corePath . '/vendor/bin/php-cs-fixer';
-
-        if (!file_exists($bin)) {
-            echo "  PHP CS Fixer not installed, skipping (run 'composer install' in {$this->corePath})\n";
-            return true;
-        }
-
-        if ($mode === 'fix') {
-            echo "\nRunning PHP CS Fixer (auto-fix)...\n";
-            $cmd = escapeshellarg($bin) . ' fix --config=' . escapeshellarg($configFile);
-        } else {
-            echo "\nRunning PHP CS Fixer (check)...\n";
-            $cmd = escapeshellarg($bin) . ' fix --dry-run --diff --config=' . escapeshellarg($configFile);
         }
 
         $output = [];
         $exitCode = 0;
 
-        exec("cd " . escapeshellarg($this->corePath) . " && {$cmd} 2>&1", $output, $exitCode);
+        exec("cd " . escapeshellarg($this->corePath) . " && {$command} 2>&1", $output, $exitCode);
 
         $outputStr = implode("\n", $output);
-        echo $outputStr . "\n";
-
-        if ($exitCode !== 0 && $mode !== 'fix') {
-            $this->errors[] = 'PHP CS Fixer found code style issues';
-            return false;
-        }
-
-        echo "  PHP CS Fixer: OK\n";
-        return true;
-    }
-
-    private function runEslint(): bool
-    {
-        echo "\nRunning ESLint...\n";
-
-        $nodeModules = $this->corePath . '/node_modules/.bin/eslint';
-
-        if (!file_exists($nodeModules)) {
-            echo "  ESLint not installed, skipping (run 'npm install' in {$this->corePath})\n";
-            return true;
-        }
-
-        $cmd = escapeshellarg($nodeModules) . ' assets/';
-        $output = [];
-        $exitCode = 0;
-
-        exec("cd " . escapeshellarg($this->corePath) . " && {$cmd} 2>&1", $output, $exitCode);
-
-        $outputStr = implode("\n", $output);
-
         if (!empty($outputStr)) {
             echo $outputStr . "\n";
         }
 
-        if ($exitCode !== 0) {
-            $this->errors[] = 'ESLint found errors';
+        if ($exitCode !== 0 && !$allowFailure) {
+            $this->errors[] = "{$label} found errors";
             return false;
         }
 
-        echo "  ESLint: OK\n";
+        echo "  {$label}: OK\n";
         return true;
     }
 
-    private function hasComposerDependency(string $package): bool
+    private function isGlobalCommand(string $bin): bool
     {
-        $composerFile = $this->corePath . '/composer.json';
-
-        if (!file_exists($composerFile)) {
-            return false;
-        }
-
-        $composer = json_decode(file_get_contents($composerFile), true);
-        $requireDev = $composer['require-dev'] ?? [];
-
-        return isset($requireDev[$package]);
+        $result = trim(shell_exec("which {$bin} 2>/dev/null") ?? '');
+        return !empty($result);
     }
 }

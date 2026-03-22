@@ -42,11 +42,13 @@ modxapp create mypackage --template=./my-templates
 
 ## Что создаётся
 
-### Структура компонента
+При использовании встроенного шаблона `default` создаётся следующая структура. При использовании [кастомного шаблона](templates.md) структура может отличаться.
 
-```
+### Исходники компонента (`core/components/<name>/`)
+
+```text
 core/components/mypackage/
-├── bootstrap.php              — точка входа
+├── bootstrap.php              — точка входа, регистрация namespace
 ├── composer.json              — зависимости (PHPStan всегда включён)
 ├── phpstan.neon               — конфигурация PHPStan (level 5)
 ├── .php-cs-fixer.dist.php     — конфигурация CS Fixer (если включён)
@@ -72,12 +74,24 @@ core/components/mypackage/
         └── connector.php
 ```
 
-### Конфигурация сборки
+### Публичные файлы (`assets/components/<name>/`)
 
+```text
+assets/components/mypackage/
+├── css/
+│   ├── mgr/mypackage.css      — стили для админки
+│   └── web/mypackage.css      — стили для фронтенда
+└── js/
+    ├── mgr/mypackage.js       — скрипты для админки
+    └── web/mypackage.js       — скрипты для фронтенда
 ```
-packages/mypackage/
-├── config.php
-└── elements/
+
+### Конфигурация сборки (`package_builder/packages/<name>/`)
+
+```text
+package_builder/packages/mypackage/
+├── config.php                 — конфигурация пакета
+└── elements/                  — описание элементов для сборки
     ├── plugins.php
     └── snippets.php
 ```
@@ -99,6 +113,3 @@ packages/mypackage/
 | `{{current_year}}` | Текущий год | `2026` |
 | `{{current_date}}` | Текущая дата | `2026-03-22` |
 
-## Конфиг пользователя
-
-После первого `--interactive` создаётся `user.config.json` с введёнными данными. При следующем создании эти значения используются как значения по умолчанию.
