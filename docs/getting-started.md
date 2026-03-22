@@ -65,7 +65,7 @@ composer require shevartv/modx-builder --dev
 
 ## Структура проекта
 
-Package Builder работает с двумя директориями:
+После выполнения `modxapp setup` и `modxapp create <name>` в рабочей директории создаётся следующая структура:
 
 ```
 core/components/<name>/              — исходники компонента
@@ -76,6 +76,14 @@ core/components/<name>/              — исходники компонента
 ├── schema/
 ├── src/
 └── elements/                        — файлы элементов (опционально)
+
+assets/components/<name>/            — публичные файлы (JS, CSS)
+├── css/
+│   ├── mgr/                         — стили для админки
+│   └── web/                         — стили для фронтенда
+└── js/
+    ├── mgr/                         — скрипты для админки
+    └── web/                         — скрипты для фронтенда
 
 package_builder/packages/<name>/     — конфигурация сборки
 ├── config.php
