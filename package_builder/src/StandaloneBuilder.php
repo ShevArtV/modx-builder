@@ -44,7 +44,7 @@ class StandaloneBuilder
         echo "Creating package: {$this->signature}\n";
     }
 
-    public function addNamespace(string $name, string $path, string $assetsPath = ''): void
+    public function addNamespace(string $name, string $path, string $assetsPath, IgnoreFilter $filter, string $corePath, string $realAssetsPath = ''): void
     {
         $object = [
             'name' => $name,
@@ -53,12 +53,46 @@ class StandaloneBuilder
         ];
 
         $hash = md5(json_encode($object));
+        $vehicleDir = 'MODX/Revolution/modNamespace/' . $hash;
+        $resolvers = [];
+        $fileIndex = 0;
+
+        $filteredCore = $this->prepareBuildSource($filter, $corePath, $name . '_core');
+        $targetDir = $this->buildDir . $vehicleDir . '/' . $fileIndex . '/';
+        $this->recursiveCopy($filteredCore, $targetDir);
+        $this->removeDir($filteredCore);
+
+        $resolvers[] = [
+            'type' => 'file',
+            'body' => json_encode([
+                'source' => $this->signature . '/' . $vehicleDir . '/' . $fileIndex . '/',
+                'target' => "return MODX_CORE_PATH . 'components/';",
+                'name' => $name,
+            ]),
+        ];
+        $fileIndex++;
+
+        if (!empty($realAssetsPath) && is_dir($realAssetsPath)) {
+            $filteredAssets = $this->prepareBuildSource($filter, $realAssetsPath, $name . '_assets');
+            $targetDir = $this->buildDir . $vehicleDir . '/' . $fileIndex . '/';
+            $this->recursiveCopy($filteredAssets, $targetDir);
+            $this->removeDir($filteredAssets);
+
+            $resolvers[] = [
+                'type' => 'file',
+                'body' => json_encode([
+                    'source' => $this->signature . '/' . $vehicleDir . '/' . $fileIndex . '/',
+                    'target' => "return MODX_ASSETS_PATH . 'components/';",
+                    'name' => $name,
+                ]),
+            ];
+        }
 
         $vehicle = [
             'unique_key' => 'name',
             'preserve_keys' => true,
             'update_object' => true,
-            'resolve' => null,
+            'resolve' => !empty($resolvers) ? $resolvers : null,
             'validate' => null,
             'vehicle_class' => 'xPDO\\Transport\\xPDOObjectVehicle',
             'vehicle_package' => '',
@@ -84,7 +118,7 @@ class StandaloneBuilder
         echo "  Namespace: {$name}\n";
     }
 
-    public function addCategory(string $categoryName, array $elements, array $config, IgnoreFilter $filter, string $corePath, string $assetsPath = ''): void
+    public function addCategory(string $categoryName, array $elements, array $config, string $corePath): void
     {
         $categoryObject = [
             'id' => null,
@@ -118,48 +152,13 @@ class StandaloneBuilder
 
         $hash = md5(json_encode($categoryObject) . $this->signature);
 
-        $vehicleDir = 'MODX/Revolution/modCategory/' . $hash;
-        $resolvers = [];
-        $fileIndex = 0;
-
-        $filteredCore = $this->prepareBuildSource($filter, $corePath, $config['name_lower'] . '_core');
-        $targetDir = $this->buildDir . $vehicleDir . '/' . $fileIndex . '/';
-        $this->recursiveCopy($filteredCore, $targetDir);
-        $this->removeDir($filteredCore);
-
-        $resolvers[] = [
-            'type' => 'file',
-            'body' => json_encode([
-                'source' => $this->signature . '/' . $vehicleDir . '/' . $fileIndex . '/',
-                'target' => "return MODX_CORE_PATH . 'components/';",
-                'name' => $config['name_lower'],
-            ]),
-        ];
-        $fileIndex++;
-
-        if (!empty($assetsPath) && is_dir($assetsPath)) {
-            $filteredAssets = $this->prepareBuildSource($filter, $assetsPath, $config['name_lower'] . '_assets');
-            $targetDir = $this->buildDir . $vehicleDir . '/' . $fileIndex . '/';
-            $this->recursiveCopy($filteredAssets, $targetDir);
-            $this->removeDir($filteredAssets);
-
-            $resolvers[] = [
-                'type' => 'file',
-                'body' => json_encode([
-                    'source' => $this->signature . '/' . $vehicleDir . '/' . $fileIndex . '/',
-                    'target' => "return MODX_ASSETS_PATH . 'components/';",
-                    'name' => $config['name_lower'],
-                ]),
-            ];
-        }
-
         $vehicle = [
             'unique_key' => 'category',
             'preserve_keys' => false,
             'update_object' => true,
             'related_objects' => !empty($relatedObjects) ? $relatedObjects : null,
             'related_object_attributes' => $relatedObjectAttributes,
-            'resolve' => !empty($resolvers) ? $resolvers : null,
+            'resolve' => null,
             'validate' => null,
             'vehicle_class' => 'xPDO\\Transport\\xPDOObjectVehicle',
             'vehicle_package' => '',

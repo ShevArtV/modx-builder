@@ -65,21 +65,24 @@ class ComponentBuilder
             $packageConfig['release']
         );
 
+        $filter = $this->createIgnoreFilter($packageConfig);
+
         $standalone->addNamespace(
             $packageConfig['name_lower'],
-            '{core_path}components/' . $packageConfig['name_lower'] . '/'
+            '{core_path}components/' . $packageConfig['name_lower'] . '/',
+            '{assets_path}components/' . $packageConfig['name_lower'] . '/',
+            $filter,
+            $packageConfig['abs_core'],
+            is_dir($packageConfig['abs_assets']) ? $packageConfig['abs_assets'] : ''
         );
 
         $elements = $this->loadElementsForStandalone($packageConfig);
-        $filter = $this->createIgnoreFilter($packageConfig);
 
         $standalone->addCategory(
             $packageConfig['elements']['category'] ?? $packageConfig['name'],
             $elements,
             $packageConfig,
-            $filter,
-            $packageConfig['abs_core'],
-            is_dir($packageConfig['abs_assets']) ? $packageConfig['abs_assets'] : ''
+            $packageConfig['abs_core']
         );
 
         if (!empty($elements['settings'])) {
