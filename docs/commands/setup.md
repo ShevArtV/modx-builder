@@ -15,28 +15,6 @@ modxapp setup
 3. **Создаётся конфигурация** для работы standalone-сборщика
 4. **Создаются директории** `core/cache/` и `core/packages/`
 
-## Два режима сборки
-
-Package Builder автоматически выбирает режим сборки:
-
-### Headless (после `modxapp setup`)
-
-Локальная разработка без сервера и MySQL. Сборка через собственный standalone-сборщик, который генерирует transport.zip без обращения к БД.
-
-| Команда | Доступна |
-|---------|----------|
-| `create` | да |
-| `build` | да (standalone-сборщик) |
-| `extract-lexicons` | да |
-| `extract-settings` | да |
-| `templates` | да |
-| `elements` | нет — нужна БД MODX |
-| `export` | нет — нужна БД MODX |
-
-### Полный MODX (установленный сайт)
-
-Работают все команды. Сборка через стандартный `modPackageBuilder` MODX. Команды `elements`, `export`, `build --install` полностью доступны.
-
 ## Когда нужен setup
 
 - Вы разрабатываете пакет **локально** и хотите собирать transport.zip без развёрнутого MODX
