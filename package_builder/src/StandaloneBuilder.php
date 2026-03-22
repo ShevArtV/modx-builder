@@ -120,7 +120,7 @@ class StandaloneBuilder
         echo "  Namespace: {$name}\n";
     }
 
-    public function addCategory(string $categoryName, array $elements, array $config, string $corePath): void
+    public function addCategory(string $categoryName, array $elements, array $config, string $corePath, array $resolverFiles = []): void
     {
         $categoryObject = [
             'id' => null,
@@ -154,13 +154,38 @@ class StandaloneBuilder
 
         $hash = md5(json_encode($categoryObject) . $this->signature);
 
+        $resolvers = [];
+        if (!empty($resolverFiles)) {
+            $vehicleDir = 'MODX/Revolution/modCategory/' . $hash;
+            foreach ($resolverFiles as $resolverFile) {
+                if (!file_exists($resolverFile)) {
+                    continue;
+                }
+                $resolverName = pathinfo($resolverFile, PATHINFO_FILENAME);
+                $resolverTarget = $vehicleDir . '.' . $resolverName . '.resolver';
+
+                copy($resolverFile, $this->buildDir . $resolverTarget);
+
+                $resolvers[] = [
+                    'type' => 'php',
+                    'body' => json_encode([
+                        'type' => 'php',
+                        'source' => $this->signature . '/' . $resolverTarget,
+                        'name' => $resolverName,
+                    ]),
+                ];
+
+                echo "    Resolver: {$resolverName}\n";
+            }
+        }
+
         $vehicle = [
             'unique_key' => 'category',
             'preserve_keys' => false,
             'update_object' => true,
             'related_objects' => !empty($relatedObjects) ? $relatedObjects : null,
             'related_object_attributes' => $relatedObjectAttributes,
-            'resolve' => null,
+            'resolve' => !empty($resolvers) ? $resolvers : null,
             'validate' => null,
             'vehicle_class' => 'xPDO\\Transport\\xPDOObjectVehicle',
             'vehicle_package' => '',

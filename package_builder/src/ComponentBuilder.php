@@ -78,11 +78,14 @@ class ComponentBuilder
 
         $elements = $this->loadElementsForStandalone($packageConfig);
 
+        $resolverFiles = $this->findResolverFiles($packageConfig);
+
         $standalone->addCategory(
             $packageConfig['elements']['category'] ?? $packageConfig['name'],
             $elements,
             $packageConfig,
-            $packageConfig['abs_core']
+            $packageConfig['abs_core'],
+            $resolverFiles
         );
 
         if (!empty($elements['settings'])) {
@@ -147,6 +150,29 @@ class ComponentBuilder
         }
 
         return $elements;
+    }
+
+    private function findResolverFiles(array $packageConfig): array
+    {
+        $resolversPath = $packageConfig['abs_core'] . 'resolvers/';
+
+        if (!empty($packageConfig['resolvers_path'])) {
+            $root = getcwd() . '/';
+            $resolversPath = $root . $packageConfig['resolvers_path'];
+        }
+
+        if (!is_dir($resolversPath)) {
+            return [];
+        }
+
+        $files = array_filter(
+            scandir($resolversPath),
+            fn($f) => str_ends_with($f, '.php') && $f !== 'resolve.encryption.php'
+        );
+
+        sort($files);
+
+        return array_map(fn($f) => $resolversPath . $f, $files);
     }
 
     public function build(string $packageName, array $buildOptions = []): bool
