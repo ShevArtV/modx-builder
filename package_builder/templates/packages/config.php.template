@@ -38,6 +38,7 @@ return [
     'tools' => [
         'phpCsFixer' => false,
         'eslint' => false,
+        'csFixerMode' => 'fix',
     ],
 
     'build' => [

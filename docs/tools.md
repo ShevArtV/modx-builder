@@ -159,6 +159,62 @@ mxbuilder config
 
 При `mxbuilder create` файлы из этой папки заменят встроенные шаблоны. Не обязательно класть все три файла — если в папке есть только `phpstan.neon`, заменён будет только он, остальные останутся встроенными.
 
+## Автоматические проверки при сборке
+
+При `mxbuilder build` перед сборкой автоматически запускаются проверки:
+
+1. **PHPStan** — если установлен (всегда включён в `composer.json`)
+2. **PHP CS Fixer** — если включён в конфиге
+3. **ESLint** — если включён в конфиге
+
+Если проверка не прошла — сборка прерывается с выводом ошибок. Это гарантирует, что в transport-пакет попадёт только проверенный код.
+
+```bash
+# Сборка с проверками (по умолчанию)
+mxbuilder build mypackage
+
+# Пропустить проверки
+mxbuilder build mypackage --no-check
+```
+
+### Режим PHP CS Fixer
+
+В `config.php` пакета можно настроить поведение CS Fixer при сборке:
+
+```php
+'tools' => [
+    'phpCsFixer' => true,
+    'csFixerMode' => 'fix',    // 'fix' — автоисправление (по умолчанию)
+                                // 'check' — только проверка, сборка прервётся при ошибках
+],
+```
+
+- **`fix`** — автоматически исправит стиль кода перед сборкой
+- **`check`** — покажет ошибки, но не изменит файлы; сборка прервётся
+
+!!! note "Зависимости должны быть установлены"
+    Проверки запускаются только если инструменты установлены. Если `vendor/` отсутствует — проверка пропускается с предупреждением. Запустите `composer install` в папке пакета.
+
+## Настройка IDE
+
+Для подсветки ошибок **в процессе разработки** (без ожидания сборки) настройте инструменты в вашем редакторе:
+
+### PhpStorm
+
+- **PHPStan**: Settings → PHP → Quality Tools → PHPStan → указать путь к `vendor/bin/phpstan` и конфиг `phpstan.neon`
+- **PHP CS Fixer**: Settings → PHP → Quality Tools → PHP CS Fixer → указать путь к `vendor/bin/php-cs-fixer`
+- **ESLint**: Settings → Languages & Frameworks → JavaScript → Code Quality Tools → ESLint → Automatic configuration
+
+### VS Code
+
+Установите расширения:
+
+- [PHPStan](https://marketplace.visualstudio.com/items?itemName=SanderRonde.phpstan-vscode) — подсветка ошибок PHPStan
+- [PHP CS Fixer](https://marketplace.visualstudio.com/items?itemName=junstyle.php-cs-fixer) — автоформатирование при сохранении
+- [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) — подсветка JS ошибок
+
+После установки расширений ошибки будут подсвечиваться прямо в коде — без необходимости запускать `build`.
+
 ## Сборка пакета
 
 Все файлы инструментов (`phpstan.neon`, `.php-cs-fixer.dist.php`, `eslint.config.js`, `package.json`, `node_modules/`) автоматически исключаются из transport-пакета через [.packignore](packignore.md).

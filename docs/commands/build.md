@@ -15,6 +15,7 @@ mxbuilder build <name> [options]
 | `--install` | Установить пакет после сборки |
 | `--download` | Скачать transport.zip (только web-режим) |
 | `--encrypt` | Зашифровать пакет через modstore.pro API |
+| `--no-check` | Пропустить проверки PHPStan/CS Fixer/ESLint |
 | `--verbose` | Подробный вывод |
 
 ## Примеры
@@ -32,6 +33,18 @@ mxbuilder build mypackage --encrypt
 # Через web
 # http://site.ru/build_web.php?package=mypackage&install&download
 ```
+
+## Проверки перед сборкой
+
+Перед сборкой автоматически запускаются проверки качества кода (если инструменты установлены):
+
+1. **PHPStan** — статический анализ
+2. **PHP CS Fixer** — проверка или автоисправление стиля (режим настраивается в `config.php`)
+3. **ESLint** — проверка JavaScript
+
+Если проверка не прошла — сборка прерывается. Используйте `--no-check` для пропуска.
+
+Подробнее: [Инструменты разработки](../tools.md#автоматические-проверки-при-сборке)
 
 ## Процесс сборки
 

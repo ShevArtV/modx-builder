@@ -31,6 +31,7 @@ use ComponentBuilder\SettingsExtractor;
 use ComponentBuilder\ElementManager;
 use ComponentBuilder\ExportManager;
 use ComponentBuilder\SetupManager;
+use ComponentBuilder\ToolsChecker;
 
 $cli = new CLI($argv);
 
@@ -54,6 +55,19 @@ try {
             $packageConfig = $configManager->loadPackageConfig($packageName);
             if (!$packageConfig) {
                 $cli->showError("Package config not found: {$packageName}");
+            }
+
+            if (!$cli->hasOption('no-check')) {
+                $root = getcwd() . '/';
+                $corePath = $root . ($packageConfig['paths']['core'] ?? 'core/components/' . $packageName . '/');
+
+                $checker = new ToolsChecker($corePath, $packageConfig);
+
+                if (!$checker->runChecks()) {
+                    echo "\nBUILD ABORTED. Fix errors above and try again.\n";
+                    echo "Use --no-check to skip checks.\n";
+                    exit(1);
+                }
             }
 
             $buildOptions = [
