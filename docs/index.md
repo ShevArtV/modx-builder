@@ -92,7 +92,9 @@ composer require shevartv/modx-builder --dev
 
 #### Варианты работы
 
-Package Builder поддерживает три варианта использования:
+Package Builder поддерживает несколько сценариев — от полностью файловой headless-разработки до смешанной работы с админкой MODX. Подробнее: [Сценарии работы](workflows.md).
+
+Основные варианты:
 
 === "Headless (локально, без MODX)"
 
