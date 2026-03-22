@@ -71,9 +71,32 @@ modxapp create my-shop --template=ecommerce
 
 ## 5. Описание элементов
 
-Элементы описываются в PHP-файлах в `package_builder/packages/<name>/elements/`. Создайте нужные файлы:
+Элементы описываются в двух местах:
+
+- **Описание** (что собирать) — PHP-файлы в `package_builder/packages/<name>/elements/`
+- **Контент** (код, HTML) — файлы в `core/components/<name>/elements/`
+
+```
+package_builder/packages/my-package/
+└── elements/
+    ├── chunks.php          — описание чанков
+    ├── snippets.php        — описание сниппетов
+    ├── plugins.php         — описание плагинов
+    └── ...
+
+core/components/my-package/
+└── elements/
+    ├── chunks/
+    │   └── hello.tpl       — HTML-код чанка
+    ├── snippets/
+    │   └── mysnippet.php   — PHP-код сниппета
+    └── plugins/
+        └── myplugin.php    — PHP-код плагина
+```
 
 ### Чанки
+
+Чанки удобнее хранить как статичные — контент в файле, MODX читает его напрямую:
 
 ```php
 // package_builder/packages/my-package/elements/chunks.php
@@ -86,14 +109,23 @@ return [
 ];
 ```
 
-Контент чанка — в отдельном файле:
+Контент чанка в `core/components/my-package/elements/chunks/hello.tpl`:
 
 ```html
-<!-- core/components/my-package/elements/chunks/hello.tpl -->
 <p>Привет, [[+name]]!</p>
 ```
 
+Чтобы чанк был статичным (MODX читает из файла, а не из БД), в `config.php` пакета должно быть:
+
+```php
+'static' => [
+    'chunks' => true,
+],
+```
+
 ### Сниппеты
+
+Аналогично — код в отдельном файле:
 
 ```php
 // package_builder/packages/my-package/elements/snippets.php
@@ -106,13 +138,23 @@ return [
 ];
 ```
 
-Код сниппета:
+Код сниппета в `core/components/my-package/elements/snippets/mysnippet.php`:
 
 ```php
-// core/components/my-package/elements/snippets/mysnippet.php
 <?php
 return 'Hello from my snippet!';
 ```
+
+Статичные сниппеты (код читается из файла):
+
+```php
+'static' => [
+    'snippets' => true,
+],
+```
+
+!!! tip "Статичные элементы"
+    Статичные элементы удобны при разработке — вы редактируете файл в IDE, и изменения сразу видны на сайте без пересборки пакета. Настройка `static` в `config.php` определяет какие типы элементов будут статичными.
 
 ### Плагины
 
@@ -130,6 +172,8 @@ return [
     ],
 ];
 ```
+
+Код плагина в `core/components/my-package/elements/plugins/myplugin.php`.
 
 ### Системные настройки
 
