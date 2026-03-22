@@ -90,7 +90,7 @@ class ElementsManager
      */
     private function loadElementsFile(string $relativePath): ?array
     {
-        $basePath = dirname(__DIR__) . '/packages/' . $this->config['name_lower'] . '/';
+        $basePath = getcwd() . '/package_builder/packages/' . $this->config['name_lower'] . '/';
         $filePath = $basePath . $relativePath;
 
         if (!file_exists($filePath)) {
