@@ -18,6 +18,15 @@ class IgnoreFilter
         '.vscode/',
         '.DS_Store',
         'Thumbs.db',
+        'phpstan.neon',
+        'phpstan.neon.dist',
+        'phpstan-baseline.neon',
+        '.php-cs-fixer.dist.php',
+        '.php-cs-fixer.cache',
+        'eslint.config.js',
+        'node_modules/',
+        'package.json',
+        'package-lock.json',
     ];
 
     /** @var array<int, array{pattern: string, negated: bool, dirOnly: bool, anchored: bool}> */

@@ -13,10 +13,16 @@
   "require": {
     "php": ">={{php_version}}"
   },
+  "require-dev": {
+    "phpstan/phpstan": "^1.10"{{composer_require_dev_extra}}
+  },
   "autoload": {
     "psr-4": {
       "{{Package_name}}\\": "src/"
     }
+  },
+  "scripts": {
+    "analyse": "phpstan analyse"{{composer_scripts_extra}}
   },
   "minimum-stability": "stable",
   "prefer-stable": true

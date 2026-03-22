@@ -1,0 +1,54 @@
+site_name: Package Builder
+site_description: CLI for rapid MODX Revolution 3 package development
+site_url: https://shevartv.github.io/modx3/
+
+theme:
+  name: material
+  language: ru
+  palette:
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Тёмная тема
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Светлая тема
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - toc:
+      permalink: true
+
+nav:
+  - Главная: index.md
+  - Установка: getting-started.md
+  - Команды:
+    - config: commands/config.md
+    - init: commands/init.md
+    - create: commands/create.md
+    - build: commands/build.md
+    - schema: commands/schema.md
+    - elements: commands/elements.md
+    - extract-lexicons: commands/extract-lexicons.md
+    - extract-settings: commands/extract-settings.md
+    - templates: commands/templates.md
+  - Конфигурация: configuration.md
+  - Инструменты: tools.md
+  - Шифрование: encryption.md
+  - .packignore: packignore.md

@@ -14,9 +14,12 @@ class ConfigManager
 
     public function getDefaultConfig(): array
     {
+        $cwd = getcwd() . '/';
+
         return [
-            'packages_path' => dirname(__DIR__) . '/packages/',
-            'core_path' => dirname(__DIR__, 2) . '/core/components/',
+            'packages_path' => $cwd . 'package_builder/packages/',
+            'core_path' => $cwd . 'core/components/',
+            'templates_path' => dirname(__DIR__) . '/templates/',
         ];
     }
 
@@ -33,6 +36,46 @@ class ConfigManager
         return is_array($config) ? $config : null;
     }   
 
+    public function getTemplatesPath(): string
+    {
+        return $this->defaultConfig['templates_path'];
+    }
+
+    public function copyTemplates(string $destination): bool
+    {
+        $source = rtrim($this->defaultConfig['templates_path'], '/');
+        $destination = rtrim($destination, '/');
+
+        if (!is_dir($source)) {
+            return false;
+        }
+
+        if (!is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        $sourceLen = strlen($source) + 1;
+
+        foreach ($iterator as $file) {
+            $target = $destination . '/' . substr($file->getPathname(), $sourceLen);
+
+            if ($file->isDir()) {
+                if (!is_dir($target)) {
+                    mkdir($target, 0755, true);
+                }
+            } else {
+                copy($file->getPathname(), $target);
+            }
+        }
+
+        return true;
+    }
+
     public function createPackageTemplate(string $packageName, array $options = []): bool
     {
         try {
@@ -41,7 +84,7 @@ class ConfigManager
 
             // Создаем конфигурационный файл пакета
             $this->createPackageConfig($packageName, $options);
-            
+
             return true;
         } catch (Exception $e) {
             error_log("Error creating package template: " . $e->getMessage());
@@ -51,7 +94,8 @@ class ConfigManager
     
     private function createPackageStructure(string $packageName, array $options = []): void
     {
-        $templatePath = dirname(__DIR__) . '/templates/components';
+        $basePath = !empty($options['template']) ? rtrim($options['template'], '/') . '/' : $this->defaultConfig['templates_path'];
+        $templatePath = $basePath . 'components';
         $targetPath = $this->defaultConfig['core_path'] . $packageName;
         
         // Создаем целевую директорию
@@ -69,11 +113,29 @@ class ConfigManager
                 $this->removeDirectory($elementsPath);
             }
         }
+
+        // Удаляем опциональные файлы если не нужны
+        if (!($options['phpCsFixer'] ?? false)) {
+            $file = $targetPath . '/.php-cs-fixer.dist.php';
+            if (file_exists($file)) {
+                unlink($file);
+            }
+        }
+
+        if (!($options['eslint'] ?? false)) {
+            foreach (['eslint.config.js', 'package.json'] as $f) {
+                $file = $targetPath . '/' . $f;
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            }
+        }
     }
     
     private function createPackageConfig(string $packageName, array $options = []): void
     {
-        $packagesTemplatePath = dirname(__DIR__) . '/templates/packages';
+        $basePath = !empty($options['template']) ? rtrim($options['template'], '/') . '/' : $this->defaultConfig['templates_path'];
+        $packagesTemplatePath = $basePath . 'packages';
         $packageConfigPath = $this->defaultConfig['packages_path'] . $packageName;
         
         // Создаем директорию для конфига пакета
@@ -175,11 +237,16 @@ class ConfigManager
         rmdir($dir);
     }
 
+    private function toPascalCase(string $name): string
+    {
+        return str_replace(' ', '', ucwords(str_replace('-', ' ', $name)));
+    }
+
     private function getPlaceholders(string $packageName, ?array $options = []): array
     {
         return [
             '{{package_name}}' => strtolower($packageName),
-            '{{Package_name}}' => ucfirst($packageName),
+            '{{Package_name}}' => $this->toPascalCase($packageName),
             '{{short_name}}' => $options['shortName'] ?? substr($packageName, 0, 3),
             '{{author_name}}' => $options['author'] ?? 'Your Name',
             '{{author_email}}' => $options['email'] ?? 'your-email@example.com',
@@ -188,6 +255,12 @@ class ConfigManager
             '{{repository}}' => $options['repository'] ?? 'https://github.com/',
             '{{current_year}}' => date('Y'),
             '{{current_date}}' => date('Y-m-d'),
+            '{{composer_require_dev_extra}}' => ($options['phpCsFixer'] ?? false)
+                ? ",\n    \"friendsofphp/php-cs-fixer\": \"^3.0\""
+                : '',
+            '{{composer_scripts_extra}}' => ($options['phpCsFixer'] ?? false)
+                ? ",\n    \"cs-check\": \"php-cs-fixer fix --dry-run\",\n    \"cs-fix\": \"php-cs-fixer fix\""
+                : '',
         ];
     }
 }

@@ -52,49 +52,58 @@ try {
             break;
 
         case 'create':
-            $userConfig = $cli->loadUserConfig();
+            if (!$cli->localConfigExists()) {
+                $globalConfig = $cli->loadUserConfig();
+                $cli->saveLocalConfig($globalConfig);
+                echo "Created mxbuilder.json from global config\n";
+            }
+
+            $localConfig = $cli->loadLocalConfig();
 
             if ($cli->hasOption('interactive')) {
                 $cli->showInteractiveHeader();
 
                 $packageName = $cli->getPackageName();
                 if (!$packageName) {
-                    $packageName = $cli->promptRequired('Package name (lowercase, no spaces)');
+                    $packageName = $cli->promptRequired('Package name (lowercase, letters, digits, hyphens)');
+                }
+                if (!$cli->validatePackageName($packageName)) {
+                    $cli->showError('Invalid package name. Use only lowercase letters, digits and hyphens. Must start with a letter.');
                 }
 
-                $author = $cli->prompt('Author name', $userConfig['author'] ?? 'Your Name');
-                $email = $cli->prompt('Author email', $userConfig['email'] ?? 'your-email@example.com');
-                $gitlogin = $cli->prompt('Git login (GitHub/GitLab username)', $userConfig['gitlogin'] ?? 'your-username');
                 $shortName = $cli->prompt('Short component name (for lexicons and settings)', substr($packageName, 0, 3));
-                $phpVersion = $cli->prompt('Minimum PHP version', $userConfig['phpVersion'] ?? '8.1');
-                $repository = $cli->prompt('Repository URL', $userConfig['repository'] ?? '');
-
-                $generateElements = $cli->promptYesNo('Generate elements files?', $userConfig['generateElements'] ?? true);
 
                 $options = [
-                    'generateElements' => $generateElements,
-                    'author' => $author,
-                    'email' => $email,
-                    'phpVersion' => $phpVersion,
-                    'gitlogin' => $gitlogin,
-                    'repository' => $repository,
+                    'generateElements' => $localConfig['generateElements'] ?? true,
+                    'phpCsFixer' => $localConfig['phpCsFixer'] ?? false,
+                    'eslint' => $localConfig['eslint'] ?? false,
+                    'template' => $localConfig['template'] ?? '',
+                    'author' => $localConfig['author'] ?? 'Your Name',
+                    'email' => $localConfig['email'] ?? 'your-email@example.com',
+                    'phpVersion' => $localConfig['phpVersion'] ?? '8.1',
+                    'gitlogin' => $localConfig['gitlogin'] ?? 'your-username',
+                    'repository' => $localConfig['repository'] ?? 'https://github.com/',
                     'shortName' => $shortName,
                 ];
-
-                $cli->saveUserConfig($options);
             } else {
                 $packageName = $cli->getPackageName();
                 if (!$packageName) {
                     $cli->showError('Package name is required for create command');
                 }
+                if (!$cli->validatePackageName($packageName)) {
+                    $cli->showError('Invalid package name. Use only lowercase letters, digits and hyphens. Must start with a letter.');
+                }
 
                 $options = [
-                    'generateElements' => $cli->hasOption('elements'),
-                    'author' => $cli->getOption('author', $userConfig['author'] ?? 'Your Name'),
-                    'email' => $cli->getOption('email', $userConfig['email'] ?? 'your-email@example.com'),
-                    'phpVersion' => $cli->getOption('php-version', $userConfig['phpVersion'] ?? '8.1'),
-                    'gitlogin' => $cli->getOption('gitlogin', $userConfig['gitlogin'] ?? 'your-username'),
-                    'repository' => $cli->getOption('repository', $userConfig['repository'] ?? 'https://github.com/'),
+                    'generateElements' => $cli->hasOption('elements') || ($localConfig['generateElements'] ?? true),
+                    'phpCsFixer' => $cli->hasOption('php-cs-fixer') || ($localConfig['phpCsFixer'] ?? false),
+                    'eslint' => $cli->hasOption('eslint') || ($localConfig['eslint'] ?? false),
+                    'template' => $cli->getOption('template', $localConfig['template'] ?? ''),
+                    'author' => $cli->getOption('author', $localConfig['author'] ?? 'Your Name'),
+                    'email' => $cli->getOption('email', $localConfig['email'] ?? 'your-email@example.com'),
+                    'phpVersion' => $cli->getOption('php-version', $localConfig['phpVersion'] ?? '8.1'),
+                    'gitlogin' => $cli->getOption('gitlogin', $localConfig['gitlogin'] ?? 'your-username'),
+                    'repository' => $cli->getOption('repository', $localConfig['repository'] ?? 'https://github.com/'),
                     'shortName' => $cli->getOption('short-name', substr($packageName, 0, 3)),
                 ];
             }
@@ -238,6 +247,78 @@ try {
             $extractor = new SettingsExtractor();
             $extractor->extractFromDirectory($directory, $settingsPrefix . '_');
             $extractor->generateSettingsFile($packageName, $settingsPrefix . '_', $outputPath);
+            break;
+
+        case 'config':
+            echo "\n=== Package Builder Global Config ===\n";
+            echo "These settings will be used as defaults for all projects.\n\n";
+
+            $globalConfig = $cli->loadUserConfig();
+
+            $globalConfig['author'] = $cli->prompt('Author name', $globalConfig['author'] ?? 'Your Name');
+            $globalConfig['email'] = $cli->prompt('Author email', $globalConfig['email'] ?? 'your-email@example.com');
+            $globalConfig['gitlogin'] = $cli->prompt('Git login (GitHub/GitLab username)', $globalConfig['gitlogin'] ?? 'your-username');
+            $globalConfig['phpVersion'] = $cli->prompt('Minimum PHP version', $globalConfig['phpVersion'] ?? '8.1');
+            $globalConfig['repository'] = $cli->prompt('Repository URL', $globalConfig['repository'] ?? '');
+            $globalConfig['template'] = $cli->prompt('Default templates path (leave empty for built-in)', $globalConfig['template'] ?? '');
+            $globalConfig['generateElements'] = $cli->promptYesNo('Generate elements files by default?', $globalConfig['generateElements'] ?? true);
+            $globalConfig['phpCsFixer'] = $cli->promptYesNo('Add PHP CS Fixer by default?', $globalConfig['phpCsFixer'] ?? false);
+            $globalConfig['eslint'] = $cli->promptYesNo('Add ESLint by default?', $globalConfig['eslint'] ?? false);
+
+            $cli->saveUserConfig($globalConfig);
+            echo "\nSUCCESS: Global config saved\n";
+            break;
+
+        case 'init':
+            if ($cli->localConfigExists()) {
+                echo "mxbuilder.json already exists in this directory.\n";
+                if (!$cli->promptYesNo('Overwrite?', false)) {
+                    echo "Aborted.\n";
+                    break;
+                }
+            }
+
+            echo "\n=== Package Builder Project Init ===\n";
+            echo "Configure settings for this project. Press Enter to use defaults.\n\n";
+
+            $globalConfig = $cli->loadUserConfig();
+
+            $localConfig = [];
+            $localConfig['author'] = $cli->prompt('Author name', $globalConfig['author'] ?? 'Your Name');
+            $localConfig['email'] = $cli->prompt('Author email', $globalConfig['email'] ?? 'your-email@example.com');
+            $localConfig['gitlogin'] = $cli->prompt('Git login', $globalConfig['gitlogin'] ?? 'your-username');
+            $localConfig['phpVersion'] = $cli->prompt('Minimum PHP version', $globalConfig['phpVersion'] ?? '8.1');
+            $localConfig['repository'] = $cli->prompt('Repository URL', $globalConfig['repository'] ?? '');
+            $localConfig['template'] = $cli->prompt('Templates path (leave empty for default)', $globalConfig['template'] ?? '');
+            $localConfig['generateElements'] = $cli->promptYesNo('Generate elements files?', $globalConfig['generateElements'] ?? true);
+            $localConfig['phpCsFixer'] = $cli->promptYesNo('Add PHP CS Fixer?', $globalConfig['phpCsFixer'] ?? false);
+            $localConfig['eslint'] = $cli->promptYesNo('Add ESLint?', $globalConfig['eslint'] ?? false);
+
+            $cli->saveLocalConfig($localConfig);
+            echo "\nSUCCESS: mxbuilder.json created\n";
+            break;
+
+        case 'templates':
+            $subCommand = $cli->getPackageName();
+
+            if ($subCommand === 'path') {
+                echo $configManager->getTemplatesPath() . "\n";
+            } elseif ($subCommand === 'copy') {
+                $destination = $cli->getArg(2);
+                if (!$destination) {
+                    $cli->showError('Destination path is required: mxbuilder templates copy <path>');
+                }
+
+                if ($configManager->copyTemplates($destination)) {
+                    echo "SUCCESS: Templates copied to {$destination}\n";
+                } else {
+                    $cli->showError("Failed to copy templates to {$destination}");
+                }
+            } else {
+                echo "Usage:\n";
+                echo "  mxbuilder templates path              Show default templates path\n";
+                echo "  mxbuilder templates copy <path>       Copy default templates to <path>\n";
+            }
             break;
 
         default:

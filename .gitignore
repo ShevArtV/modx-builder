@@ -3,5 +3,9 @@
 
 # Включаем
 !/.gitignore
+!/.gitattributes
 !/agents/
 !/package_builder/
+!/docs/
+!/mkdocs.yml
+!/composer.json

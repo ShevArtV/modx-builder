@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'TestPkg' => [
-        'description' => 'Test plugin for TestPkg',
-        'content' => 'file:elements/plugins/switch.php',
+    'Testpkg' => [
+        'file' => 'switch.php',
+        'description' => '',
         'events' => [
             'OnLoadWebDocument',
         ],

@@ -7,7 +7,7 @@
  */
 
 $basePath = $modx->getOption('base_path', null, $_SERVER['DOCUMENT_ROOT'] . '/');
-require_once $basePath . 'core/components/{{Package_name}}/src/vendor/autoload.php';
+require_once $basePath . 'core/components/{{package_name}}/src/vendor/autoload.php';
 
 $output = [
     'message' => '',

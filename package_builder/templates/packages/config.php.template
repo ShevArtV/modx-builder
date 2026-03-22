@@ -35,6 +35,11 @@ return [
         'templates' => true,
     ],
     
+    'tools' => [
+        'phpCsFixer' => false,
+        'eslint' => false,
+    ],
+
     'build' => [
         'download' => false,
         'install' => false,

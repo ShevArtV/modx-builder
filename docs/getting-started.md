@@ -1,0 +1,84 @@
+# Установка
+
+## Через Composer
+
+```bash
+composer require shevartv/modx-builder --dev
+```
+
+После установки CLI доступен как:
+
+```bash
+vendor/bin/mxbuilder
+```
+
+Для глобальной установки (команда `mxbuilder` доступна из любой директории):
+
+```bash
+composer global require shevartv/modx-builder
+mxbuilder
+```
+
+## Структура после установки
+
+Package Builder работает с двумя директориями:
+
+```
+core/components/mypackage/    — исходники компонента
+├── bootstrap.php
+├── composer.json
+├── docs/
+├── lexicon/
+├── schema/
+├── src/
+└── elements/                 — файлы элементов (опционально)
+
+package_builder/packages/mypackage/   — конфигурация сборки
+├── config.php
+└── elements/
+    ├── chunks.php
+    ├── snippets.php
+    ├── plugins.php
+    └── ...
+```
+
+## Создание первого пакета
+
+### Интерактивный режим
+
+```bash
+mxbuilder create mypackage --interactive
+```
+
+Мастер задаст вопросы:
+
+- Имя автора
+- Email
+- Git логин
+- Краткое имя компонента (для лексиконов)
+- Минимальная версия PHP
+- URL репозитория
+- Генерировать ли файлы элементов
+- Добавить PHP CS Fixer (PSR-12)
+- Добавить ESLint для JS
+
+Ответы сохраняются в `user.config.json` и используются как значения по умолчанию при следующем создании.
+
+### Через флаги
+
+```bash
+mxbuilder create mypackage \
+    --elements \
+    --author="Ivan Petrov" \
+    --email=ivan@example.com \
+    --gitlogin=ivanpetrov \
+    --short-name=my \
+    --php-version=8.1
+```
+
+## Следующие шаги
+
+1. [Настройте конфигурацию пакета](configuration.md)
+2. [Создайте свои шаблоны](commands/templates.md) (опционально)
+3. [Опишите элементы](commands/elements.md)
+4. [Соберите пакет](commands/build.md)

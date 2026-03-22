@@ -1,31 +1,43 @@
 <?php
 
 return [
-    'name' => 'TestPkg',
+    'name' => 'Testpkg',
     'name_lower' => 'testpkg',
-    'name_short' => 'tp',
-    'version' => '1.1.0',
-    'release' => 'beta',
-    'php_version' => '8.1',
-
+    'name_short' => 'tes',
+    'version' => '1.0.0',
+    'release' => 'alpha',
+    
     'paths' => [
         'core' => 'core/components/testpkg/',
         'assets' => 'assets/components/testpkg/',
     ],
-
-    'elements' => [
-        'category' => 'TestPkg',
-        'snippets' => 'elements/snippets.php',
-        'chunks' => 'elements/chunks.php',
-        'plugins' => 'elements/plugins.php',
-        'settings' => 'elements/settings.php',
-        'events' => 'elements/events.php',
+    
+    'schema' => [
+        'file' => 'model/schema/testpkg.mysql.schema.xml',
+        'auto_generate_classes' => true,
+        'update_tables' => true,
     ],
-
+    
+    'elements' => [
+        'category' => 'Testpkg',
+        'chunks' => 'elements/chunks.php',
+        'snippets' => 'elements/snippets.php',
+        'plugins' => 'elements/plugins.php',
+        'templates' => 'elements/templates.php',
+        'tvs' => 'elements/tvs.php',
+        'settings' => 'elements/settings.php',
+        'menus' => 'elements/menus.php',
+    ],
+    
     'static' => [
-        'chunks' => false,
-        'snippets' => false,
-        'plugins' => false,
+        'chunks' => true,
+        'snippets' => true,
+        'templates' => true,
+    ],
+    
+    'tools' => [
+        'phpCsFixer' => false,
+        'eslint' => false,
     ],
 
     'build' => [
@@ -34,9 +46,7 @@ return [
         'update' => [
             'chunks' => true,
             'snippets' => true,
-            'plugins' => true,
             'settings' => false,
-            'events' => true,
         ],
     ],
 ];

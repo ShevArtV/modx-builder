@@ -45,6 +45,16 @@ class CLI
         return $this->args[1] ?? null;
     }
 
+    public function getArg(int $index): ?string
+    {
+        return $this->args[$index] ?? null;
+    }
+
+    public function validatePackageName(string $name): bool
+    {
+        return (bool) preg_match('/^[a-z][a-z0-9\-]*$/', $name);
+    }
+
     public function getOption(string $name, $default = null)
     {
         return $this->options[$name] ?? $default;
@@ -57,15 +67,18 @@ class CLI
 
     public function showHelp(): void
     {
-        echo "ComponentBuilder for MODX Revolution 3\n\n";
-        echo "Usage: php cli.php <command> [package_name] [options]\n\n";
+        echo "Package Builder for MODX Revolution 3\n\n";
+        echo "Usage: mxbuilder <command> [package_name] [options]\n\n";
         echo "Commands:\n";
+        echo "  config                  Configure global settings\n";
+        echo "  init                    Initialize project (create mxbuilder.json)\n";
         echo "  create <name>           Create new package from template\n";
         echo "  build <name>            Build transport package\n";
         echo "  schema <name>           Generate classes from XML schema\n";
-        echo "  elements <name>         Sync elements to database\n";
+        echo "  elements <name>         Add elements to MODX database\n";
         echo "  extract-lexicons <name> Extract lexicon keys from code\n";
         echo "  extract-settings <name> Extract settings from code\n";
+        echo "  templates path|copy     Manage templates\n";
         echo "  help                    Show this help\n";
         echo "\nBuild options:\n";
         echo "  --install        Install package after build\n";
@@ -160,10 +173,10 @@ class CLI
         if (!file_exists($this->userConfigPath)) {
             return [];
         }
-        
+
         $configContent = file_get_contents($this->userConfigPath);
         $config = json_decode($configContent, true);
-        
+
         return is_array($config) ? $config : [];
     }
 
@@ -171,5 +184,34 @@ class CLI
     {
         $jsonContent = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
         file_put_contents($this->userConfigPath, $jsonContent);
+    }
+
+    public function getLocalConfigPath(): string
+    {
+        return getcwd() . '/mxbuilder.json';
+    }
+
+    public function localConfigExists(): bool
+    {
+        return file_exists($this->getLocalConfigPath());
+    }
+
+    public function loadLocalConfig(): array
+    {
+        $path = $this->getLocalConfigPath();
+
+        if (!file_exists($path)) {
+            return [];
+        }
+
+        $config = json_decode(file_get_contents($path), true);
+
+        return is_array($config) ? $config : [];
+    }
+
+    public function saveLocalConfig(array $config): void
+    {
+        $jsonContent = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        file_put_contents($this->getLocalConfigPath(), $jsonContent);
     }
 }

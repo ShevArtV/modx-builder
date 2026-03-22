@@ -1,0 +1,12 @@
+# Exclude from composer dist archive
+/_build            export-ignore
+/agents            export-ignore
+/assets            export-ignore
+/core              export-ignore
+/modxbuilder       export-ignore
+/temp              export-ignore
+/terminal          export-ignore
+/.gitattributes    export-ignore
+/.packignore       export-ignore
+/docs              export-ignore
+/mkdocs.yml        export-ignore
