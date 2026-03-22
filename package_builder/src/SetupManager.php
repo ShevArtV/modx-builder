@@ -194,6 +194,9 @@ if (!defined('MODX_MANAGER_PATH')) define('MODX_MANAGER_PATH', '{$this->basePath
 if (!defined('MODX_MANAGER_URL')) define('MODX_MANAGER_URL', '/manager/');
 if (!defined('MODX_BASE_PATH')) define('MODX_BASE_PATH', '{$this->basePath}/');
 if (!defined('MODX_BASE_URL')) define('MODX_BASE_URL', '/');
+if (!defined('MODX_URL_SCHEME')) define('MODX_URL_SCHEME', 'http://');
+if (!defined('MODX_HTTP_HOST')) define('MODX_HTTP_HOST', 'localhost');
+if (!defined('MODX_SITE_URL')) define('MODX_SITE_URL', 'http://localhost/');
 if (!defined('MODX_ASSETS_PATH')) define('MODX_ASSETS_PATH', '{$this->basePath}/assets/');
 if (!defined('MODX_ASSETS_URL')) define('MODX_ASSETS_URL', '/assets/');
 PHP;
