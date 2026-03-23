@@ -58,7 +58,8 @@ class ComponentBuilder
 
         echo "Building package (standalone): {$packageName}\n";
 
-        $standalone = new StandaloneBuilder(MODX_CORE_PATH . 'packages');
+        $packagesPath = $this->headless ? getcwd() . '/core/packages' : MODX_CORE_PATH . 'packages';
+        $standalone = new StandaloneBuilder($packagesPath);
         $standalone->createPackage(
             $packageConfig['name_lower'],
             $packageConfig['version'],
