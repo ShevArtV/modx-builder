@@ -341,15 +341,13 @@ class ComponentBuilder
     private function initializeModx(): void
     {
         if (!defined('MODX_CORE_PATH')) {
-            $composerHome = getenv('COMPOSER_HOME')
-                ?: (($_SERVER['HOME'] ?? getenv('HOME') ?? '') . '/.config/composer');
-            $globalPackagePath = $composerHome . '/vendor/shevartv/modx-builder';
+            $modxappHome = ($_SERVER['HOME'] ?? getenv('HOME') ?? '') . '/.modxapp';
 
             $searchPaths = [
                 getcwd(),
                 dirname(__DIR__, 2),
                 dirname(__DIR__),
-                $globalPackagePath,
+                $modxappHome,
             ];
 
             $found = false;

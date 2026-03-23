@@ -458,7 +458,8 @@ try {
                 realpath(__DIR__) ?: __DIR__,
                 realpath(getcwd()) ?: getcwd()
             );
-            $basePath = $isGlobal ? dirname(__DIR__) : getcwd();
+            $modxappHome = ($_SERVER['HOME'] ?? getenv('HOME') ?? getenv('USERPROFILE')) . '/.modxapp';
+            $basePath = $isGlobal ? $modxappHome : getcwd();
 
             $setupManager = new SetupManager($basePath);
 
