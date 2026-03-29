@@ -263,6 +263,7 @@ modxapp config
 
 ```php
 'tools' => [
+    'test' => 'vendor/bin/phpunit --no-progress',
     'analyse' => 'vendor/bin/phpstan analyse --no-progress',
     'cs' => 'vendor/bin/php-cs-fixer fix',
     'lint' => 'node_modules/.bin/eslint assets/',
@@ -270,6 +271,7 @@ modxapp config
 ],
 ```
 
+- **`test`** — unit-тесты (по умолчанию PHPUnit)
 - **`analyse`** — статический анализ (по умолчанию PHPStan)
 - **`cs`** — проверка/исправление стиля кода (по умолчанию пусто)
 - **`lint`** — линтинг JS (по умолчанию пусто)

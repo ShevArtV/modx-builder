@@ -9,11 +9,6 @@ class SettingsExtractor
 {
     private array $settings = [];
 
-    /**
-     * @param string $directory
-     * @param string $packagePrefix
-     * @return void
-     */
     public function extractFromDirectory(string $directory, string $packagePrefix): void
     {
         if (!is_dir($directory)) {
@@ -37,17 +32,12 @@ class SettingsExtractor
         }
     }
 
-    /**
-     * @param string $filePath
-     * @param string $packagePrefix
-     * @return void
-     */
     private function extractFromFile(string $filePath, string $packagePrefix): void
     {
         $content = file_get_contents($filePath);
         $lines = file($filePath, FILE_IGNORE_NEW_LINES);
 
-        $pattern = '/\$modx->getOption\([\'"](' . preg_quote($packagePrefix, '/') . '[^\'"]+)[\'"]/';;
+        $pattern = '/\$modx->getOption\([\'"](' . preg_quote($packagePrefix, '/') . '[^\'"]+)[\'"]/';
 
         preg_match_all($pattern, $content, $matches);
 
@@ -55,66 +45,80 @@ class SettingsExtractor
             return;
         }
 
+        $lastFoundLine = 0;
         foreach ($matches[1] as $index => $key) {
-            $lineNumber = $this->findLineNumber($matches[0][$index], $lines);
+            $lineNumber = $this->findLineNumber($matches[0][$index], $lines, $lastFoundLine);
+            if ($lineNumber > 0) {
+                $lastFoundLine = $lineNumber;
+            }
+
+            $lineOffset = $this->getOffsetByLine($content, $lineNumber);
 
             $this->settings[$key] = [
                 'file' => basename($filePath),
                 'line' => $lineNumber,
-                'type' => $this->inferSettingType($content, $matches[0][$index]),
-                'default' => $this->extractDefaultValue($content, $matches[0][$index]),
+                'type' => $this->inferSettingType($content, $matches[0][$index], $lineOffset),
+                'default' => $this->extractDefaultValue($content, $matches[0][$index], $lineOffset),
             ];
         }
     }
 
-    /**
-     * @param string $match
-     * @param array $lines
-     * @return int
-     */
-    private function findLineNumber(string $match, array $lines): int
+    private function findLineNumber(string $match, array $lines, int $startLine = 0): int
     {
-        foreach ($lines as $index => $line) {
-            if (str_contains($line, $match)) {
-                return $index + 1;
+        for ($i = $startLine; $i < count($lines); $i++) {
+            if (str_contains($lines[$i], $match)) {
+                return $i + 1;
             }
         }
         return 0;
     }
 
-    /**
-     * @param string $content
-     * @param string $match
-     * @return string
-     */
-    private function inferSettingType(string $content, string $match): string
+    private function getOffsetByLine(string $content, int $lineNumber): int
     {
-        $pos = strpos($content, $match);
+        if ($lineNumber <= 1) {
+            return 0;
+        }
+
+        $pos = 0;
+        for ($i = 1; $i < $lineNumber; $i++) {
+            $pos = strpos($content, "\n", $pos);
+            if ($pos === false) {
+                return strlen($content);
+            }
+            $pos++;
+        }
+        return $pos;
+    }
+
+    private function inferSettingType(string $content, string $match, int $offset = 0): string
+    {
+        $pos = strpos($content, $match, $offset);
+        if ($pos === false) {
+            return 'string';
+        }
         $context = substr($content, $pos, 200);
 
-        if (preg_match('/(if|foreach|while|switch)/', $context)) {
+        if (preg_match('/\b(if|foreach|while|switch)\b/', $context)) {
             return 'boolean';
         }
 
-        if (preg_match('/(intval|floatval|number_format)/', $context)) {
+        if (preg_match('/\b(intval|floatval|number_format)\b/', $context)) {
             return 'number';
         }
 
-        if (preg_match('/(array|explode|json_decode)/', $context)) {
+        if (preg_match('/\b(array|explode|json_decode)\b/', $context)) {
             return 'array';
         }
 
         return 'string';
     }
 
-    /**
-     * @param string $content
-     * @param string $match
-     * @return string
-     */
-    private function extractDefaultValue(string $content, string $match): string
+    private function extractDefaultValue(string $content, string $match, int $offset = 0): string
     {
-        $pos = strpos($content, $match);
+        $pos = strpos($content, $match, $offset);
+        if ($pos === false) {
+            return '';
+        }
         $context = substr($content, $pos, 100);
 
         if (preg_match('/\$modx->getOption\([^,]+,\s*[^,]+,\s*[\'"]([^\'"]*)[\'"]/', $context, $matches)) {
@@ -124,12 +128,6 @@ class SettingsExtractor
         return '';
     }
 
-    /**
-     * @param string $packageName
-     * @param string $packagePrefix
-     * @param string $outputPath
-     * @return void
-     */
     public function generateSettingsFile(string $packageName, string $packagePrefix, string $outputPath): void
     {
         $settingsData = [];
@@ -163,11 +161,6 @@ class SettingsExtractor
         echo "Found " . count($this->settings) . " settings\n";
     }
 
-    /**
-     * @param string $packagePrefix
-     * @param string $lexiconPath
-     * @return void
-     */
     private function generateSettingsLexicon(string $packagePrefix, string $lexiconPath): void
     {
         $content = "<?php\n\n";
@@ -186,10 +179,6 @@ class SettingsExtractor
         file_put_contents($lexiconPath, $content);
     }
 
-    /**
-     * @param string $type
-     * @return string
-     */
     private function getXType(string $type): string
     {
         return match ($type) {
@@ -200,10 +189,6 @@ class SettingsExtractor
         };
     }
 
-    /**
-     * @param string $key
-     * @return string
-     */
     private function categorizeSetting(string $key): string
     {
         $parts = explode('_', $key);
@@ -215,9 +200,6 @@ class SettingsExtractor
         return 'general';
     }
 
-    /**
-     * @return array
-     */
     public function getSettings(): array
     {
         return $this->settings;

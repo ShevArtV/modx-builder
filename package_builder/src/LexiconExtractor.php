@@ -9,10 +9,6 @@ class LexiconExtractor
 {
     private array $lexiconKeys = [];
 
-    /**
-     * @param string $directory
-     * @return void
-     */
     public function extractFromDirectory(string $directory): void
     {
         if (!is_dir($directory)) {
@@ -36,10 +32,6 @@ class LexiconExtractor
         }
     }
 
-    /**
-     * @param string $filePath
-     * @return void
-     */
     private function extractFromFile(string $filePath): void
     {
         $content = file_get_contents($filePath);
@@ -51,43 +43,40 @@ class LexiconExtractor
             return;
         }
 
+        $lastFoundLine = 0;
         foreach ($matches[1] as $index => $key) {
             if (!preg_match('/^[a-zA-Z0-9_]+$/', $key)) {
                 continue;
             }
 
-            $lineNumber = $this->findLineNumber($matches[0][$index], $lines);
+            $lineNumber = $this->findLineNumber($matches[0][$index], $lines, $lastFoundLine);
+            if ($lineNumber > 0) {
+                $lastFoundLine = $lineNumber;
+            }
             $className = $this->extractClassName($content);
             $methodName = $this->extractMethodName($content, $lineNumber);
 
-            $this->lexiconKeys[$key] = [
-                'file' => basename($filePath),
-                'class' => $className,
-                'method' => $methodName,
-                'line' => $lineNumber,
-            ];
+            if (!isset($this->lexiconKeys[$key])) {
+                $this->lexiconKeys[$key] = [
+                    'file' => basename($filePath),
+                    'class' => $className,
+                    'method' => $methodName,
+                    'line' => $lineNumber,
+                ];
+            }
         }
     }
 
-    /**
-     * @param string $match
-     * @param array $lines
-     * @return int
-     */
-    private function findLineNumber(string $match, array $lines): int
+    private function findLineNumber(string $match, array $lines, int $startLine = 0): int
     {
-        foreach ($lines as $index => $line) {
-            if (str_contains($line, $match)) {
-                return $index + 1;
+        for ($i = $startLine; $i < count($lines); $i++) {
+            if (str_contains($lines[$i], $match)) {
+                return $i + 1;
             }
         }
         return 0;
     }
 
-    /**
-     * @param string $content
-     * @return string
-     */
     private function extractClassName(string $content): string
     {
         if (preg_match('/class\s+(\w+)/', $content, $matches)) {
@@ -96,11 +85,6 @@ class LexiconExtractor
         return 'unknown';
     }
 
-    /**
-     * @param string $content
-     * @param int $lineNumber
-     * @return string
-     */
     private function extractMethodName(string $content, int $lineNumber): string
     {
         $lines = explode("\n", $content);
@@ -115,11 +99,6 @@ class LexiconExtractor
         return 'unknown';
     }
 
-    /**
-     * @param string $packageName
-     * @param string $outputPath
-     * @return void
-     */
     public function generateLexiconFile(string $packageName, string $outputPath): void
     {
         $lexiconData = [];
@@ -132,7 +111,8 @@ class LexiconExtractor
 
         $content = "<?php\n\n";
         foreach ($lexiconData as $key => $value) {
-            $content .= "\$_lang['{$key}'] = '{$value}';\n";
+            $safeValue = addcslashes((string) $value, "'\\");
+            $content .= "\$_lang['{$key}'] = '{$safeValue}';\n";
         }
 
         $outputDir = dirname($outputPath);
@@ -145,9 +125,6 @@ class LexiconExtractor
         echo "Found " . count($this->lexiconKeys) . " lexicon keys\n";
     }
 
-    /**
-     * @return array
-     */
     public function getKeys(): array
     {
         return $this->lexiconKeys;

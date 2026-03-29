@@ -12,11 +12,6 @@ class SchemaManager
     {
     }
 
-    /**
-     * @param string $schemaFile
-     * @param string $outputDir
-     * @return bool
-     */
     public function generateClasses(string $schemaFile, string $outputDir): bool
     {
         if (!file_exists($schemaFile)) {
@@ -50,11 +45,6 @@ class SchemaManager
         return true;
     }
 
-    /**
-     * @param string $schemaFile
-     * @param string $packageName
-     * @return bool
-     */
     public function updateDatabase(string $schemaFile, string $packageName): bool
     {
         if (!file_exists($schemaFile)) {
@@ -86,10 +76,6 @@ class SchemaManager
         return true;
     }
 
-    /**
-     * @param string $schemaFile
-     * @return array
-     */
     public function validateSchema(string $schemaFile): array
     {
         $errors = [];
@@ -147,11 +133,6 @@ class SchemaManager
         return $errors;
     }
 
-    /**
-     * @param string $oldSchema
-     * @param string $newSchema
-     * @return array
-     */
     public function compareSchemas(string $oldSchema, string $newSchema): array
     {
         $changes = [
@@ -193,10 +174,6 @@ class SchemaManager
         return $changes;
     }
 
-    /**
-     * @param DOMXPath $xpath
-     * @return array
-     */
     private function extractClasses(DOMXPath $xpath): array
     {
         $classes = [];

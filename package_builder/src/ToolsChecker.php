@@ -9,6 +9,7 @@ class ToolsChecker
     private array $errors = [];
 
     private const DEFAULTS = [
+        'test' => 'vendor/bin/phpunit --no-progress',
         'analyse' => 'vendor/bin/phpstan analyse --no-progress',
         'cs' => 'vendor/bin/php-cs-fixer fix',
         'lint' => 'node_modules/.bin/eslint assets/',
@@ -25,6 +26,13 @@ class ToolsChecker
         $this->errors = [];
         $passed = true;
         $tools = $this->config['tools'] ?? [];
+
+        $testCmd = $tools['test'] ?? self::DEFAULTS['test'];
+        if (!empty($testCmd)) {
+            if (!$this->runTool('test', $testCmd)) {
+                $passed = false;
+            }
+        }
 
         $analyseCmd = $tools['analyse'] ?? self::DEFAULTS['analyse'];
         if (!empty($analyseCmd)) {
@@ -68,6 +76,7 @@ class ToolsChecker
     private function runTool(string $name, string $command, bool $allowFailure = false): bool
     {
         $labels = [
+            'test' => 'Tests',
             'analyse' => 'Static analysis',
             'cs' => 'Code style',
             'lint' => 'Linting',
@@ -75,6 +84,12 @@ class ToolsChecker
 
         $label = $labels[$name] ?? $name;
         echo "\nRunning {$label}...\n";
+
+        if (!$this->isAllowedCommand($command)) {
+            echo "  Blocked unsafe command: {$command}\n";
+            $this->errors[] = "{$label}: command blocked by security check";
+            return false;
+        }
 
         $bin = explode(' ', $command)[0];
         $binPath = $this->corePath . '/' . $bin;
@@ -87,7 +102,8 @@ class ToolsChecker
         $output = [];
         $exitCode = 0;
 
-        exec("cd " . escapeshellarg($this->corePath) . " && {$command} 2>&1", $output, $exitCode);
+        $safeCommand = $this->buildSafeCommand($command);
+        exec("cd " . escapeshellarg($this->corePath) . " && {$safeCommand} 2>&1", $output, $exitCode);
 
         $outputStr = implode("\n", $output);
         if (!empty($outputStr)) {
@@ -103,9 +119,38 @@ class ToolsChecker
         return true;
     }
 
+    private function isAllowedCommand(string $command): bool
+    {
+        if (preg_match('/[;&|`$\\\]/', $command)) {
+            return false;
+        }
+
+        $bin = explode(' ', $command)[0];
+        $allowedBins = [
+            'vendor/bin/phpunit',
+            'vendor/bin/phpstan',
+            'vendor/bin/php-cs-fixer',
+            'vendor/bin/psalm',
+            'vendor/bin/pint',
+            'node_modules/.bin/eslint',
+            'npx',
+        ];
+
+        return in_array($bin, $allowedBins, true);
+    }
+
+    private function buildSafeCommand(string $command): string
+    {
+        $parts = explode(' ', $command);
+        $bin = array_shift($parts);
+        $args = array_map('escapeshellarg', $parts);
+
+        return $bin . ' ' . implode(' ', $args);
+    }
+
     private function isGlobalCommand(string $bin): bool
     {
-        $result = trim(shell_exec("which {$bin} 2>/dev/null") ?? '');
+        $result = trim(shell_exec("which " . escapeshellarg($bin) . " 2>/dev/null") ?? '');
         return !empty($result);
     }
 }

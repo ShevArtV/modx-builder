@@ -8,7 +8,11 @@
   },
   "autoload": {
     "psr-4": {
-      "ComponentBuilder\\": "src/",
+      "ComponentBuilder\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
       "Modx3TestUtils\\": "test-utils/src/"
     }
   },

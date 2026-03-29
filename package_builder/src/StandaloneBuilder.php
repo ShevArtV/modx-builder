@@ -32,7 +32,7 @@ class StandaloneBuilder
         $this->buildDir = $this->packagesDir . $this->signature . '/';
 
         if (is_dir($this->buildDir)) {
-            $this->removeDir($this->buildDir);
+            FileSystem::removeDirectory($this->buildDir);
         }
         mkdir($this->buildDir, 0755, true);
 
@@ -59,8 +59,8 @@ class StandaloneBuilder
 
         $filteredCore = $this->prepareBuildSource($filter, $corePath, $name . '_core');
         $targetDir = $this->buildDir . $vehicleDir . '/' . $fileIndex . '/' . $name . '/';
-        $this->recursiveCopy($filteredCore, $targetDir);
-        $this->removeDir($filteredCore);
+        FileSystem::recursiveCopy($filteredCore, $targetDir);
+        FileSystem::removeDirectory($filteredCore);
 
         $resolvers[] = [
             'type' => 'file',
@@ -75,8 +75,8 @@ class StandaloneBuilder
         if (!empty($realAssetsPath) && is_dir($realAssetsPath)) {
             $filteredAssets = $this->prepareBuildSource($filter, $realAssetsPath, $name . '_assets');
             $targetDir = $this->buildDir . $vehicleDir . '/' . $fileIndex . '/' . $name . '/';
-            $this->recursiveCopy($filteredAssets, $targetDir);
-            $this->removeDir($filteredAssets);
+            FileSystem::recursiveCopy($filteredAssets, $targetDir);
+            FileSystem::removeDirectory($filteredAssets);
 
             $resolvers[] = [
                 'type' => 'file',
@@ -328,7 +328,7 @@ class StandaloneBuilder
         $this->addDirToZip($zip, $this->buildDir, $this->signature . '/');
         $zip->close();
 
-        $this->removeDir($this->buildDir);
+        FileSystem::removeDirectory($this->buildDir);
 
         echo "Package built: {$this->signature}.transport.zip\n";
         return true;
@@ -397,7 +397,7 @@ class StandaloneBuilder
             $content = $this->resolveContent($data, $corePath);
             $isStatic = (!empty($config['static']['snippets']) && !empty($this->resolveStaticFile($data)));
             if (!$isStatic) {
-                $content = $this->normalizePhpElementContent($content);
+                $content = FileSystem::normalizePhpElementContent($content);
             }
             $hash = md5($name . $this->signature . 'snippet');
 
@@ -458,7 +458,7 @@ class StandaloneBuilder
             $content = $this->resolveContent($data, $corePath);
             $isStatic = (!empty($config['static']['plugins']) && !empty($this->resolveStaticFile($data)));
             if (!$isStatic) {
-                $content = $this->normalizePhpElementContent($content);
+                $content = FileSystem::normalizePhpElementContent($content);
             }
             $hash = md5($name . $this->signature . 'plugin');
 
@@ -621,9 +621,15 @@ class StandaloneBuilder
 
     private function resolveContent(array $data, string $corePath): string
     {
-        if (!empty($data['content']) && str_starts_with($data['content'], 'file:')) {
-            $file = $corePath . substr($data['content'], 5);
-            return file_exists($file) ? file_get_contents($file) : '';
+        $content = $data['content'] ?? '';
+
+        if (!empty($content) && str_starts_with($content, 'file:')) {
+            $missingFile = null;
+            $result = FileSystem::resolveFileContent($content, $corePath, $missingFile);
+            if ($missingFile !== null) {
+                echo "WARNING: Element file not found: {$missingFile}\n";
+            }
+            return $result;
         }
 
         if (!empty($data['file'])) {
@@ -640,24 +646,12 @@ class StandaloneBuilder
             }
         }
 
-        return $data['content'] ?? $data['snippet'] ?? $data['plugincode'] ?? '';
+        return $content ?: ($data['snippet'] ?? $data['plugincode'] ?? '');
     }
 
     private function resolveStaticFile(array $data): string
     {
-        if (!empty($data['content']) && str_starts_with($data['content'], 'file:')) {
-            return substr($data['content'], 5);
-        }
-        return '';
-    }
-
-    private function normalizePhpElementContent(string $content): string
-    {
-        $content = ltrim($content, "\xEF\xBB\xBF");
-        $content = preg_replace('/^\s*<\?php\b\s*/i', '', $content) ?? $content;
-        $content = preg_replace('/\s*\?>\s*$/', '', $content) ?? $content;
-
-        return trim($content);
+        return FileSystem::resolveStaticFilePath($data['content'] ?? '');
     }
 
     private function prepareBuildSource(IgnoreFilter $filter, string $sourcePath, string $tmpName): string
@@ -681,11 +675,11 @@ class StandaloneBuilder
     {
         return sprintf(
             '%04x%04x%04x%04x%04x%04x%04x%04x',
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-            mt_rand(0, 0xffff),
-            mt_rand(0, 0x0fff) | 0x4000,
-            mt_rand(0, 0x3fff) | 0x8000,
-            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+            random_int(0, 0xffff), random_int(0, 0xffff),
+            random_int(0, 0xffff),
+            random_int(0, 0x0fff) | 0x4000,
+            random_int(0, 0x3fff) | 0x8000,
+            random_int(0, 0xffff), random_int(0, 0xffff), random_int(0, 0xffff)
         );
     }
 
@@ -709,59 +703,4 @@ class StandaloneBuilder
         }
     }
 
-    private function recursiveCopy(string $source, string $destination): void
-    {
-        if (!is_dir($source)) {
-            return;
-        }
-
-        if (!is_dir($destination)) {
-            mkdir($destination, 0755, true);
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
-
-        $sourceLen = strlen($source) + 1;
-
-        foreach ($iterator as $file) {
-            $target = $destination . '/' . substr($file->getPathname(), $sourceLen);
-
-            if ($file->isDir()) {
-                if (!is_dir($target)) {
-                    mkdir($target, 0755, true);
-                }
-            } else {
-                $targetDir = dirname($target);
-                if (!is_dir($targetDir)) {
-                    mkdir($targetDir, 0755, true);
-                }
-                copy($file->getPathname(), $target);
-            }
-        }
-    }
-
-    private function removeDir(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isDir()) {
-                rmdir($file->getPathname());
-            } else {
-                unlink($file->getPathname());
-            }
-        }
-
-        rmdir($dir);
-    }
 }

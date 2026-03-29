@@ -20,28 +20,17 @@ class ComponentBuilder
     private array $tempDirs = [];
     private bool $headless = false;
 
-    /**
-     * @param array $config
-     */
     public function __construct(array $config = [])
     {
         $this->config = $config;
         $this->initializeModx();
     }
 
-    /**
-     * @return modX
-     */
     public function getModx(): modX
     {
         return $this->modx;
     }
 
-    /**
-     * @param string $packageName
-     * @param array $buildOptions
-     * @return bool
-     */
     public function isHeadless(): bool
     {
         return $this->headless;
@@ -135,9 +124,8 @@ class ComponentBuilder
         $elements = [];
         $basePath = getcwd() . '/package_builder/packages/' . $packageConfig['name_lower'] . '/';
 
-        $types = ['chunks', 'snippets', 'plugins', 'templates', 'tvs', 'settings', 'menus'];
-
-        foreach ($types as $type) {
+        foreach (ElementType::cases() as $elementType) {
+            $type = $elementType->getPluralName();
             if (empty($packageConfig['elements'][$type])) {
                 continue;
             }
@@ -287,10 +275,6 @@ class ComponentBuilder
         return true;
     }
 
-    /**
-     * @param array $packageConfig
-     * @return IgnoreFilter
-     */
     private function createIgnoreFilter(array $packageConfig): IgnoreFilter
     {
         $packagesPath = dirname(__DIR__) . '/packages/' . $packageConfig['name_lower'] . '/';
@@ -305,12 +289,6 @@ class ComponentBuilder
         return $filter;
     }
 
-    /**
-     * @param IgnoreFilter $filter
-     * @param string $sourcePath
-     * @param string $prefix
-     * @return string
-     */
     private function prepareBuildSource(IgnoreFilter $filter, string $sourcePath, string $prefix): string
     {
         $tempDir = sys_get_temp_dir() . '/modx_build_' . $prefix . '_' . uniqid();
@@ -325,20 +303,14 @@ class ComponentBuilder
         return $destination . '/';
     }
 
-    /**
-     * @return void
-     */
     private function cleanupTempDirs(): void
     {
         foreach ($this->tempDirs as $dir) {
-            IgnoreFilter::removeDirectory($dir);
+            FileSystem::removeDirectory($dir);
         }
         $this->tempDirs = [];
     }
 
-    /**
-     * @return void
-     */
     private function initializeModx(): void
     {
         if (!defined('MODX_CORE_PATH')) {
@@ -364,6 +336,11 @@ class ComponentBuilder
                 $path = getcwd();
                 while (!file_exists($path . '/core/config/config.inc.php') && strlen($path) > 1) {
                     $path = dirname($path);
+                }
+                if (!file_exists($path . '/core/config/config.inc.php')) {
+                    throw new \RuntimeException(
+                        "MODX core not found. Run 'modxapp setup' or set MODX_CORE_PATH manually."
+                    );
                 }
                 define('MODX_CORE_PATH', $path . '/core/');
             }
@@ -400,10 +377,6 @@ class ComponentBuilder
         $this->modx->setLogTarget(php_sapi_name() === 'cli' ? 'ECHO' : 'HTML');
     }
 
-    /**
-     * @param string $packageName
-     * @return array|null
-     */
     private function resolveConfig(string $packageName): ?array
     {
         $config = $this->config;
@@ -420,10 +393,6 @@ class ComponentBuilder
         return $config;
     }
 
-    /**
-     * @param array $packageConfig
-     * @return void
-     */
     private function initializeCategory(array $packageConfig): void
     {
         $categoryName = $packageConfig['elements']['category'] ?? $packageConfig['name'];
@@ -442,10 +411,6 @@ class ComponentBuilder
         $this->modx->log(modX::LOG_LEVEL_INFO, "Created category: {$categoryName}");
     }
 
-    /**
-     * @param array $packageConfig
-     * @return void
-     */
     private function processElements(array $packageConfig): void
     {
         $elementsManager = new ElementsManager(
@@ -461,11 +426,6 @@ class ComponentBuilder
         $this->categoryAttributes = $elementsManager->getCategoryAttributes();
     }
 
-    /**
-     * @param mixed $vehicle
-     * @param array $packageConfig
-     * @return void
-     */
     private function addResolvers($vehicle, array $packageConfig): void
     {
         $resolversPath = getcwd() . '/package_builder/packages/' . $packageConfig['name_lower'] . '/resolvers/';
@@ -493,10 +453,6 @@ class ComponentBuilder
         }
     }
 
-    /**
-     * @param array $packageConfig
-     * @return bool
-     */
     private function setupEncryption(array $packageConfig): bool
     {
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Encryption enabled, requesting key...');
@@ -574,10 +530,6 @@ class ComponentBuilder
         return true;
     }
 
-    /**
-     * @param array $packageConfig
-     * @return void
-     */
     private function addEncryptionResolverEnd(array $packageConfig): void
     {
         $resolverPath = $this->findEncryptionResolver($packageConfig);
@@ -590,10 +542,6 @@ class ComponentBuilder
         }
     }
 
-    /**
-     * @param array $packageConfig
-     * @return string|null
-     */
     private function findEncryptionResolver(array $packageConfig): ?string
     {
         $paths = [
@@ -615,16 +563,18 @@ class ComponentBuilder
         return null;
     }
 
-    /**
-     * @return void
-     */
     private function install(): void
     {
         $signature = $this->builder->getSignature();
         $this->modx->log(modX::LOG_LEVEL_INFO, "Installing package: {$signature}");
 
-        $sig = explode('-', $signature);
-        $versionSignature = explode('.', $sig[1]);
+        if (!preg_match('/^(.+)-(\d+\.\d+\.\d+)(?:-(.+))?$/', $signature, $sigParts)) {
+            $this->modx->log(modX::LOG_LEVEL_ERROR, "Invalid package signature: {$signature}");
+            return;
+        }
+
+        $versionSignature = explode('.', $sigParts[2]);
+        $release = $sigParts[3] ?? '';
 
         /** @var modTransportPackage $package */
         $package = $this->modx->getObject(modTransportPackage::class, ['signature' => $signature]);
@@ -645,13 +595,13 @@ class ComponentBuilder
                 'version_patch' => $versionSignature[2] ?? 0,
             ]);
 
-            if (!empty($sig[2])) {
-                $r = preg_split('#([0-9]+)#', $sig[2], -1, PREG_SPLIT_DELIM_CAPTURE);
+            if (!empty($release)) {
+                $r = preg_split('#([0-9]+)#', $release, -1, PREG_SPLIT_DELIM_CAPTURE);
                 if (is_array($r) && !empty($r)) {
                     $package->set('release', $r[0]);
                     $package->set('release_index', $r[1] ?? '0');
                 } else {
-                    $package->set('release', $sig[2]);
+                    $package->set('release', $release);
                 }
             }
 
@@ -666,9 +616,6 @@ class ComponentBuilder
         }
     }
 
-    /**
-     * @return void
-     */
     private function download(): void
     {
         $name = $this->builder->getSignature() . '.transport.zip';
@@ -679,11 +626,6 @@ class ComponentBuilder
             return;
         }
 
-        $content = file_get_contents($filePath);
-        if ($content === false) {
-            return;
-        }
-
         header('Content-Description: File Transfer');
         header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename=' . $name);
@@ -691,14 +633,11 @@ class ComponentBuilder
         header('Expires: 0');
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
-        header('Content-Length: ' . strlen($content));
-        exit($content);
+        header('Content-Length: ' . filesize($filePath));
+        readfile($filePath);
+        exit;
     }
 
-    /**
-     * @param string $filepath
-     * @return string
-     */
     private function readDocFile(string $filepath): string
     {
         if (!file_exists($filepath)) {

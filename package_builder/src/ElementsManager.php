@@ -1,7 +1,4 @@
 <?php
-/**
- * @file ElementsManager.php
- */
 
 namespace ComponentBuilder;
 
@@ -26,13 +23,6 @@ class ElementsManager
 {
     private array $categoryAttributes;
 
-    /**
-     * @param modX $modx
-     * @param modPackageBuilder $builder
-     * @param modCategory $category
-     * @param array $categoryAttributes
-     * @param array $config
-     */
     public function __construct(
         private readonly modX $modx,
         private readonly modPackageBuilder $builder,
@@ -43,34 +33,17 @@ class ElementsManager
         $this->categoryAttributes = $categoryAttributes;
     }
 
-    /**
-     * @return array
-     */
     public function getCategoryAttributes(): array
     {
         return $this->categoryAttributes;
     }
 
-    /**
-     * @param array $elementsConfig
-     * @return void
-     */
     public function processElements(array $elementsConfig): void
     {
-        $typeMap = [
-            'chunks' => 'processChunks',
-            'snippets' => 'processSnippets',
-            'plugins' => 'processPlugins',
-            'templates' => 'processTemplates',
-            'tvs' => 'processTVs',
-            'settings' => 'processSettings',
-            'menus' => 'processMenus',
-            'events' => 'processEvents',
-            'policies' => 'processPolicies',
-            'policyTemplates' => 'processPolicyTemplates',
-        ];
+        foreach (ElementType::cases() as $elementType) {
+            $type = $elementType->getPluralName();
+            $method = $elementType->getProcessMethod();
 
-        foreach ($typeMap as $type => $method) {
             if (!isset($elementsConfig[$type])) {
                 continue;
             }
@@ -84,10 +57,6 @@ class ElementsManager
         }
     }
 
-    /**
-     * @param string $relativePath
-     * @return array|null
-     */
     private function loadElementsFile(string $relativePath): ?array
     {
         $basePath = getcwd() . '/package_builder/packages/' . $this->config['name_lower'] . '/';
@@ -108,10 +77,6 @@ class ElementsManager
         return $elements;
     }
 
-    /**
-     * @param array $chunks
-     * @return void
-     */
     private function processChunks(array $chunks): void
     {
         $this->categoryAttributes[xPDOTransport::RELATED_OBJECT_ATTRIBUTES]['Chunks'] = [
@@ -139,10 +104,6 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($objects) . ' Chunks');
     }
 
-    /**
-     * @param array $snippets
-     * @return void
-     */
     private function processSnippets(array $snippets): void
     {
         $this->categoryAttributes[xPDOTransport::RELATED_OBJECT_ATTRIBUTES]['Snippets'] = [
@@ -156,7 +117,7 @@ class ElementsManager
             $isStatic = !empty($this->config['static']['snippets']);
             $content = $this->resolveContent($data);
             if (!$isStatic) {
-                $content = $this->normalizePhpElementContent($content);
+                $content = FileSystem::normalizePhpElementContent($content);
             }
 
             $snippet = $this->modx->newObject(modSnippet::class);
@@ -185,10 +146,6 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($objects) . ' Snippets');
     }
 
-    /**
-     * @param array $plugins
-     * @return void
-     */
     private function processPlugins(array $plugins): void
     {
         $this->categoryAttributes[xPDOTransport::RELATED_OBJECT_ATTRIBUTES]['Plugins'] = [
@@ -210,7 +167,7 @@ class ElementsManager
             $isStatic = !empty($this->config['static']['plugins']);
             $content = $this->resolveContent($data);
             if (!$isStatic) {
-                $content = $this->normalizePhpElementContent($content);
+                $content = FileSystem::normalizePhpElementContent($content);
             }
 
             $plugin = $this->modx->newObject(modPlugin::class);
@@ -249,10 +206,6 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($objects) . ' Plugins');
     }
 
-    /**
-     * @param array $templates
-     * @return void
-     */
     private function processTemplates(array $templates): void
     {
         $this->categoryAttributes[xPDOTransport::RELATED_OBJECT_ATTRIBUTES]['Templates'] = [
@@ -280,10 +233,6 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($objects) . ' Templates');
     }
 
-    /**
-     * @param array $tvs
-     * @return void
-     */
     private function processTVs(array $tvs): void
     {
         $this->categoryAttributes[xPDOTransport::RELATED_OBJECT_ATTRIBUTES]['TemplateVars'] = [
@@ -311,10 +260,6 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($objects) . ' TVs');
     }
 
-    /**
-     * @param array $settings
-     * @return void
-     */
     private function processSettings(array $settings): void
     {
         $attributes = [
@@ -338,10 +283,6 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($settings) . ' System Settings');
     }
 
-    /**
-     * @param array $menus
-     * @return void
-     */
     private function processMenus(array $menus): void
     {
         $attributes = [
@@ -370,10 +311,6 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($menus) . ' Menus');
     }
 
-    /**
-     * @param array $events
-     * @return void
-     */
     private function processEvents(array $events): void
     {
         $attributes = [
@@ -396,10 +333,6 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($events) . ' Events');
     }
 
-    /**
-     * @param array $policies
-     * @return void
-     */
     private function processPolicies(array $policies): void
     {
         $attributes = [
@@ -426,10 +359,6 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($policies) . ' Access Policies');
     }
 
-    /**
-     * @param array $templates
-     * @return void
-     */
     private function processPolicyTemplates(array $templates): void
     {
         $attributes = [
@@ -477,53 +406,45 @@ class ElementsManager
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaged in ' . count($templates) . ' Policy Templates');
     }
 
-    /**
-     * @param array $data
-     * @return string
-     */
     private function resolveContent(array $data): string
     {
         $content = $data['content'] ?? '';
+        $corePath = $this->config['abs_core'];
 
-        if (str_starts_with($content, 'file:')) {
-            $filePath = $this->config['abs_core'] . substr($content, 5);
-            if (!file_exists($filePath)) {
-                $this->modx->log(modX::LOG_LEVEL_WARN, "Element file not found: {$filePath}");
-                return '';
+        if (!empty($content) && str_starts_with($content, 'file:')) {
+            $missingFile = null;
+            $result = FileSystem::resolveFileContent($content, $corePath, $missingFile);
+            if ($missingFile !== null) {
+                $this->modx->log(modX::LOG_LEVEL_WARN, "Element file not found: {$missingFile}");
             }
-
-            $raw = file_get_contents($filePath);
-            if ($raw === false) {
-                return '';
-            }
-
-            return trim($raw);
+            return $result;
         }
 
-        return $content;
+        if (!empty($data['file'])) {
+            $searchPaths = [
+                $corePath . 'elements/snippets/' . $data['file'],
+                $corePath . 'elements/plugins/' . $data['file'],
+                $corePath . 'elements/chunks/' . $data['file'],
+                $corePath . $data['file'],
+            ];
+            foreach ($searchPaths as $path) {
+                if (file_exists($path)) {
+                    return file_get_contents($path);
+                }
+            }
+            $this->modx->log(modX::LOG_LEVEL_WARN, "Element file not found: {$data['file']}");
+        }
+
+        return $content ?: ($data['snippet'] ?? $data['plugincode'] ?? '');
     }
 
-    private function normalizePhpElementContent(string $content): string
-    {
-        $content = ltrim($content, "\xEF\xBB\xBF");
-        $content = preg_replace('/^\s*<\?php\b\s*/i', '', $content) ?? $content;
-        $content = preg_replace('/\s*\?>\s*$/', '', $content) ?? $content;
-
-        return trim($content);
-    }
-
-    /**
-     * @param array $data
-     * @return string
-     */
     private function resolveStaticFile(array $data): string
     {
-        $content = $data['content'] ?? '';
-
-        if (str_starts_with($content, 'file:')) {
-            return 'core/components/' . $this->config['name_lower'] . '/' . substr($content, 5);
+        $relativePath = FileSystem::resolveStaticFilePath($data['content'] ?? '');
+        if ($relativePath === '') {
+            return '';
         }
 
-        return '';
+        return 'core/components/' . $this->config['name_lower'] . '/' . $relativePath;
     }
 }

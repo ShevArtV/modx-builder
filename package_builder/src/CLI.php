@@ -59,7 +59,7 @@ class CLI
         return (bool) preg_match('/^[a-z][a-z0-9\-]*$/', $name);
     }
 
-    public function getOption(string $name, $default = null)
+    public function getOption(string $name, mixed $default = null): mixed
     {
         return $this->options[$name] ?? $default;
     }

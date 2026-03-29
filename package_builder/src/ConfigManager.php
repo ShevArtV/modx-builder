@@ -57,28 +57,7 @@ class ConfigManager
             return false;
         }
 
-        if (!is_dir($destination)) {
-            mkdir($destination, 0755, true);
-        }
-
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST
-        );
-
-        $sourceLen = strlen($source) + 1;
-
-        foreach ($iterator as $file) {
-            $target = $destination . '/' . substr($file->getPathname(), $sourceLen);
-
-            if ($file->isDir()) {
-                if (!is_dir($target)) {
-                    mkdir($target, 0755, true);
-                }
-            } else {
-                copy($file->getPathname(), $target);
-            }
-        }
+        FileSystem::recursiveCopy($source, $destination);
 
         return true;
     }
@@ -116,7 +95,7 @@ class ConfigManager
             $this->createAssetsStructure($packageName, $options, $templatePath);
 
             return true;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             error_log("Error creating package template: " . $e->getMessage());
             return false;
         }
@@ -127,23 +106,19 @@ class ConfigManager
         $sourcePath = $templatePath . 'core/components';
         $targetPath = $this->defaultConfig['core_path'] . $packageName;
         
-        // Создаем целевую директорию
         if (!is_dir($targetPath)) {
             mkdir($targetPath, 0755, true);
         }
         
-        // Рекурсивно копируем все файлы и папки
         $this->recursiveCopyWithProcessing($sourcePath, $targetPath, $packageName, $options);
         
-        // Если не нужно генерировать элементы, удаляем папку
         if (!($options['generateElements'] ?? false)) {
             $elementsPath = $targetPath . '/elements';
             if (is_dir($elementsPath)) {
-                $this->removeDirectory($elementsPath);
+                FileSystem::removeDirectory($elementsPath);
             }
         }
 
-        // Удаляем опциональные файлы если не нужны
         if (!($options['phpCsFixer'] ?? false)) {
             $file = $targetPath . '/.php-cs-fixer.dist.php';
             if (file_exists($file)) {
@@ -163,7 +138,7 @@ class ConfigManager
         if (!($options['tests'] ?? true)) {
             $testsPath = $targetPath . '/tests';
             if (is_dir($testsPath)) {
-                $this->removeDirectory($testsPath);
+                FileSystem::removeDirectory($testsPath);
             }
             $phpunitXml = $targetPath . '/phpunit.xml';
             if (file_exists($phpunitXml)) {
@@ -222,12 +197,10 @@ class ConfigManager
         $packagesTemplatePath = $templatePath . 'package_builder/packages';
         $packageConfigPath = $this->defaultConfig['packages_path'] . $packageName;
         
-        // Создаем директорию для конфига пакета
         if (!is_dir($packageConfigPath)) {
             mkdir($packageConfigPath, 0755, true);
         }
         
-        // Копируем шаблоны конфига с обработкой
         $this->recursiveCopyWithProcessing($packagesTemplatePath, $packageConfigPath, $packageName, $options);
     }
     
@@ -245,34 +218,26 @@ class ConfigManager
         $sourceLength = strlen($source);
         
         foreach ($iterator as $file) {
-            // Получаем относительный путь от source
             $relativePath = substr($file->getPathname(), $sourceLength);
             $relativePath = ltrim($relativePath, '/\\');
             
-            // Заменяем плейсхолдеры в относительном пути
             $relativePath = str_replace('{{package_name}}', $packageName, $relativePath);
             
             $targetPath = $destination . '/' . $relativePath;
             
             if ($file->isDir()) {
-                // Создаем директорию
                 if (!is_dir($targetPath)) {
                     mkdir($targetPath, 0755, true);
                 }
             } else {
-                // Обрабатываем файл
                 $fileName = basename($targetPath);
-                
-                // Заменяем плейсхолдеры в имени файла
                 $fileName = $this->replacePlaceholders($fileName, $packageName, $options);
                 $targetPath = dirname($targetPath) . '/' . $fileName;
                 
-                // Если это .template файл, обрабатываем его
                 if (str_ends_with($fileName, '.template')) {
                     $targetPath = str_replace('.template', '', $targetPath);
                     $this->processTemplateFile($file->getPathname(), $targetPath, $packageName, $options);
                 } else {
-                    // Просто копируем файл
                     $targetDir = dirname($targetPath);
                     if (!is_dir($targetDir)) {
                         mkdir($targetDir, 0755, true);
@@ -294,7 +259,6 @@ class ConfigManager
     {
         $content = $this->replacePlaceholders(file_get_contents($sourcePath), $packageName, $options);
         
-        // Создаем директорию если нужно
         $targetDir = dirname($targetPath);
         if (!is_dir($targetDir)) {
             mkdir($targetDir, 0755, true);
@@ -303,24 +267,6 @@ class ConfigManager
         file_put_contents($targetPath, $content);
     }
     
-    private function removeDirectory(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-        
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            $path = $dir . '/' . $file;
-            if (is_dir($path)) {
-                $this->removeDirectory($path);
-            } else {
-                unlink($path);
-            }
-        }
-        rmdir($dir);
-    }
-
     private function toPascalCase(string $name): string
     {
         return str_replace(' ', '', ucwords(str_replace('-', ' ', $name)));

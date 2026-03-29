@@ -36,6 +36,7 @@ return [
     ],
     
     'tools' => [
+        'test' => 'vendor/bin/phpunit --no-progress',
         'analyse' => 'vendor/bin/phpstan analyse --no-progress',
         'cs' => '',
         'lint' => '',

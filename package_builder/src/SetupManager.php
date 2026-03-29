@@ -122,7 +122,7 @@ class SetupManager
         $sourceCore = $dirs[0] . '/core';
         if (!is_dir($sourceCore)) {
             echo "ERROR: core/ directory not found in archive\n";
-            $this->removeDir($tmpDir);
+            FileSystem::removeDirectory($tmpDir);
             return false;
         }
 
@@ -131,7 +131,7 @@ class SetupManager
             mkdir($targetCore, 0755, true);
         }
 
-        $this->recursiveCopy($sourceCore, $targetCore);
+        FileSystem::recursiveCopy($sourceCore, $targetCore);
 
         $rootDir = $dirs[0];
         if (file_exists($rootDir . '/composer.lock')) {
@@ -152,7 +152,7 @@ class SetupManager
             file_put_contents($targetCore . '/composer.json', json_encode($composerJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         }
 
-        $this->removeDir($tmpDir);
+        FileSystem::removeDirectory($tmpDir);
 
         echo "Core extracted to {$targetCore}\n";
 
@@ -327,7 +327,7 @@ PHP;
         ];
 
         foreach ($paths as $path) {
-            $which = trim(shell_exec("which {$path} 2>/dev/null") ?? '');
+            $which = trim(shell_exec("which " . escapeshellarg($path) . " 2>/dev/null") ?? '');
             if (!empty($which)) {
                 return $which;
             }
@@ -339,51 +339,4 @@ PHP;
         return null;
     }
 
-    private function recursiveCopy(string $source, string $destination): void
-    {
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
-
-        $sourceLen = strlen($source) + 1;
-
-        foreach ($iterator as $file) {
-            $target = $destination . '/' . substr($file->getPathname(), $sourceLen);
-
-            if ($file->isDir()) {
-                if (!is_dir($target)) {
-                    mkdir($target, 0755, true);
-                }
-            } else {
-                $targetDir = dirname($target);
-                if (!is_dir($targetDir)) {
-                    mkdir($targetDir, 0755, true);
-                }
-                copy($file->getPathname(), $target);
-            }
-        }
-    }
-
-    private function removeDir(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isDir()) {
-                rmdir($file->getPathname());
-            } else {
-                unlink($file->getPathname());
-            }
-        }
-
-        rmdir($dir);
-    }
 }

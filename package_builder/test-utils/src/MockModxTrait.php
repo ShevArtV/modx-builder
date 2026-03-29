@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  */
 trait MockModxTrait
 {
-    protected MockObject $modx;
+    protected MockObject&\MODX\Revolution\modX $modx;
     protected array $modxOptions = [];
     private array $getObjectMap = [];
     private array $getCollectionMap = [];
@@ -37,11 +37,7 @@ trait MockModxTrait
 
     protected function createQueryMock(): MockObject
     {
-        $query = $this->getMockBuilder(\xPDO\Om\xPDOQuery::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['where', 'sortby', 'select', 'limit', 'leftJoin', 'innerJoin', 'rightJoin', 'groupby', 'having'])
-            ->onlyMethods(['prepare'])
-            ->getMock();
+        $query = $this->createMock(Stubs\QueryStub::class);
 
         $query->method('where')->willReturnSelf();
         $query->method('sortby')->willReturnSelf();
@@ -115,11 +111,7 @@ trait MockModxTrait
 
     private function configureModxLexicon(): void
     {
-        $lexicon = $this->getMockBuilder(\MODX\Revolution\modLexicon::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['load'])
-            ->addMethods(['__invoke'])
-            ->getMock();
+        $lexicon = $this->createMock(Stubs\LexiconStub::class);
 
         $lexicon->method('load');
         $lexicon->method('__invoke')->willReturnCallback(

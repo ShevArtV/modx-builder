@@ -37,11 +37,7 @@ final class MockQueryBuilder
 
     public function build(): MockObject
     {
-        $query = $this->test->getMockBuilder(\xPDO\Om\xPDOQuery::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['where', 'sortby', 'select', 'limit', 'leftJoin', 'innerJoin', 'rightJoin', 'groupby', 'having'])
-            ->onlyMethods(['prepare'])
-            ->getMock();
+        $query = $this->test->createMock(Stubs\QueryStub::class);
 
         $query->method('where')->willReturnSelf();
         $query->method('sortby')->willReturnSelf();

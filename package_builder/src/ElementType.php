@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ComponentBuilder;
 
 enum ElementType: string
@@ -17,7 +19,7 @@ enum ElementType: string
 
     public function getPluralName(): string
     {
-        return match($this) {
+        return match ($this) {
             self::CHUNK => 'chunks',
             self::SNIPPET => 'snippets',
             self::PLUGIN => 'plugins',
@@ -28,6 +30,22 @@ enum ElementType: string
             self::EVENT => 'events',
             self::POLICY => 'policies',
             self::POLICY_TEMPLATE => 'policyTemplates',
+        };
+    }
+
+    public function getProcessMethod(): string
+    {
+        return match ($this) {
+            self::CHUNK => 'processChunks',
+            self::SNIPPET => 'processSnippets',
+            self::PLUGIN => 'processPlugins',
+            self::TEMPLATE => 'processTemplates',
+            self::TV => 'processTVs',
+            self::SETTING => 'processSettings',
+            self::MENU => 'processMenus',
+            self::EVENT => 'processEvents',
+            self::POLICY => 'processPolicies',
+            self::POLICY_TEMPLATE => 'processPolicyTemplates',
         };
     }
 }

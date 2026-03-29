@@ -170,7 +170,7 @@ class SchemaExtractor
 
         $attrStr = '';
         foreach ($attrs as $k => $v) {
-            $attrStr .= " {$k}=\"{$v}\"";
+            $attrStr .= " {$k}=\"" . htmlspecialchars((string) $v, ENT_XML1 | ENT_QUOTES, 'UTF-8') . "\"";
         }
 
         return "        <field{$attrStr}/>\n";

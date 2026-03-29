@@ -8,8 +8,6 @@ use SplFileInfo;
 
 class IgnoreFilter
 {
-    private const IGNORE_FILE = '.packignore';
-
     private const DEFAULT_PATTERNS = [
         '.git/',
         '.gitignore',
@@ -303,25 +301,4 @@ class IgnoreFilter
         return false;
     }
 
-    public static function removeDirectory(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::CHILD_FIRST
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isDir()) {
-                rmdir($file->getPathname());
-            } else {
-                unlink($file->getPathname());
-            }
-        }
-
-        rmdir($dir);
-    }
 }

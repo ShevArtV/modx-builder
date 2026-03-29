@@ -316,11 +316,13 @@ class ExportManager
         }
 
         $items = [];
-        $criteria = ['name:LIKE' => "%{$name}%"];
 
-        foreach ($this->modx->getIterator(modEvent::class, $criteria) as $event) {
-            $service = $event->get('service');
-            if ($service === 6) {
+        foreach ($this->modx->getIterator(modEvent::class, ['service' => 6, 'groupname' => $name]) as $event) {
+            $items[] = $event->get('name');
+        }
+
+        if (empty($items)) {
+            foreach ($this->modx->getIterator(modEvent::class, ['service' => 6, 'name:LIKE' => "{$name}%"]) as $event) {
                 $items[] = $event->get('name');
             }
         }
