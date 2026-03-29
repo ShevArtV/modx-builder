@@ -8,6 +8,91 @@ Package Builder автоматически настраивает инструм
 
 Все три инструмента запускаются автоматически при `modxapp build` и могут быть заменены на аналоги.
 
+## PHPUnit + test-utils
+
+Unit-тестирование компонентов без реальной базы данных и MODX. При `modxapp create` автоматически генерируются `phpunit.xml`, директория `tests/` с примером теста и подключается библиотека `modx/test-utils`.
+
+### Что даёт test-utils
+
+Библиотека `modx/test-utils` содержит готовые моки и утилиты:
+
+- **ModxTestCase** — базовый TestCase с моком `$this->modx` из коробки
+- **MockModxTrait** — трейт для подключения мока modX в любой TestCase
+- **ReflectionHelper** — работа с private методами и свойствами в тестах
+- **MockQueryBuilder** — fluent-билдер для настройки моков SQL-запросов
+
+Мок modX включает стабы: `log()`, `newQuery()`, `getObject()`, `getCollection()`, `getIterator()`, `getOption()`, а также моки `services`, `lexicon` и `cacheManager`.
+
+### Запуск тестов
+
+```bash
+cd core/components/mypackage/
+composer install
+composer test
+# или напрямую
+vendor/bin/phpunit
+```
+
+### Пример теста
+
+```php
+<?php
+
+namespace MyPackage\Tests;
+
+use Modx3TestUtils\ModxTestCase;
+use Modx3TestUtils\ReflectionHelper;
+
+class MyServiceTest extends ModxTestCase
+{
+    use ReflectionHelper;
+
+    public function testGetOptionReturnsValue(): void
+    {
+        $this->modxOptions['my_setting'] = 'value';
+        $this->setUpModxMock();
+
+        $this->assertSame('value', $this->modx->getOption('my_setting'));
+    }
+
+    public function testPrivateMethod(): void
+    {
+        $instance = self::createWithoutConstructor(MyService::class);
+        self::setProperty($instance, 'modx', $this->modx);
+
+        $result = self::invokeMethod($instance, 'calculate', [100]);
+        $this->assertSame(110, $result);
+    }
+
+    public function testWithMockedObject(): void
+    {
+        $resource = $this->createMock(\MODX\Revolution\modResource::class);
+        $resource->method('get')->willReturn('Test Page');
+        $this->mockGetObject(\MODX\Revolution\modResource::class, $resource);
+
+        $result = $this->modx->getObject(\MODX\Revolution\modResource::class, 1);
+        $this->assertNotNull($result);
+    }
+}
+```
+
+### MockQueryBuilder
+
+Для тестов со сложными SQL-запросами:
+
+```php
+use Modx3TestUtils\MockQueryBuilder;
+
+$query = MockQueryBuilder::create($this)
+    ->withRows([
+        ['id' => 1, 'pagetitle' => 'Home'],
+        ['id' => 2, 'pagetitle' => 'About'],
+    ])
+    ->build();
+
+$this->modx->method('newQuery')->willReturn($query);
+```
+
 ## PHPStan
 
 Статический анализатор PHP. Включён по умолчанию. Добавляется в `composer.json` как dev-зависимость.
@@ -24,6 +109,7 @@ parameters:
     paths:
         - src
         - elements
+        - tests
     excludePaths:
         analyse:
             - src/Model
@@ -298,4 +384,4 @@ modxapp build mypackage --no-check
 
 ## Сборка пакета
 
-Все файлы инструментов (`phpstan.neon`, `.php-cs-fixer.dist.php`, `eslint.config.js`, `package.json`, `node_modules/`) автоматически исключаются из transport-пакета через [.packignore](packignore.md).
+Все файлы инструментов (`phpstan.neon`, `phpunit.xml`, `.php-cs-fixer.dist.php`, `eslint.config.js`, `package.json`, `node_modules/`, `tests/`) автоматически исключаются из transport-пакета через [.packignore](packignore.md).

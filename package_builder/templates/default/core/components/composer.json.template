@@ -14,16 +14,16 @@
     "php": ">={{php_version}}"
   },
   "require-dev": {
-    "phpstan/phpstan": "^1.10"{{composer_require_dev_extra}}
-  },
+    {{composer_require_dev_tests}}"phpstan/phpstan": "^1.10"{{composer_require_dev_extra}}
+  },{{composer_autoload_dev}}
   "autoload": {
     "psr-4": {
       "{{Package_name}}\\": "src/"
     }
   },
   "scripts": {
-    "analyse": "phpstan analyse"{{composer_scripts_extra}}
-  },
+    {{composer_scripts_tests}}"analyse": "phpstan analyse"{{composer_scripts_extra}}
+  },{{composer_repositories_tests}}
   "minimum-stability": "stable",
   "prefer-stable": true
 }

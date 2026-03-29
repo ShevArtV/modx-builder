@@ -99,6 +99,7 @@ class CLI
         echo "  --gitlogin=      Git username\n";
         echo "  --repository=    Repository URL\n";
         echo "  --short-name=    Short name for lexicons/settings\n";
+        echo "  --no-tests       Skip PHPUnit and test-utils setup\n";
         echo "  --interactive    Interactive mode\n";
         echo "\nSchema options:\n";
         echo "  --validate       Validate schema without generating\n";

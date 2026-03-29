@@ -42,6 +42,9 @@ core/components/my-package/
 ├── bootstrap.php              — точка входа
 ├── composer.json              — зависимости и скрипты
 ├── phpstan.neon               — конфигурация PHPStan
+├── phpunit.xml                — конфигурация PHPUnit
+├── tests/
+│   └── ExampleTest.php        — пример unit-теста
 ├── docs/                      — readme, license, changelog
 ├── lexicon/                   — файлы переводов
 ├── schema/                    — XML-схема БД
@@ -255,6 +258,18 @@ modxapp build my-package --no-check
 ```bash
 modxapp build my-package --install
 ```
+
+## 9. Тестирование
+
+При создании пакета автоматически генерируется тестовая инфраструктура — `phpunit.xml`, пример теста и подключение библиотеки `modx/test-utils` с готовыми моками MODX:
+
+```bash
+cd core/components/my-package/
+composer install
+composer test
+```
+
+Тесты работают без реальной БД и MODX — библиотека предоставляет моки `modX`, `xPDOQuery`, `cacheManager`, `lexicon` и других объектов. Подробнее: [Инструменты — PHPUnit](tools.md#phpunit-test-utils)
 
 ## Что дальше
 

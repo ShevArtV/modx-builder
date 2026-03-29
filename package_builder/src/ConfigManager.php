@@ -160,6 +160,17 @@ class ConfigManager
             }
         }
 
+        if (!($options['tests'] ?? true)) {
+            $testsPath = $targetPath . '/tests';
+            if (is_dir($testsPath)) {
+                $this->removeDirectory($testsPath);
+            }
+            $phpunitXml = $targetPath . '/phpunit.xml';
+            if (file_exists($phpunitXml)) {
+                unlink($phpunitXml);
+            }
+        }
+
         $this->applyToolsConfig($targetPath, $options);
     }
 
@@ -315,6 +326,11 @@ class ConfigManager
         return str_replace(' ', '', ucwords(str_replace('-', ' ', $name)));
     }
 
+    private function resolveTestUtilsPath(): string
+    {
+        return '../../../package_builder/test-utils';
+    }
+
     private function getPlaceholders(string $packageName, ?array $options = []): array
     {
         return [
@@ -328,11 +344,23 @@ class ConfigManager
             '{{repository}}' => $options['repository'] ?? 'https://github.com/',
             '{{current_year}}' => date('Y'),
             '{{current_date}}' => date('Y-m-d'),
+            '{{composer_require_dev_tests}}' => ($options['tests'] ?? true)
+                ? "\"phpunit/phpunit\": \"^10.0|^11.0\",\n    \"modx/test-utils\": \"dev-main\",\n    "
+                : '',
             '{{composer_require_dev_extra}}' => ($options['phpCsFixer'] ?? false)
                 ? ",\n    \"friendsofphp/php-cs-fixer\": \"^3.0\""
                 : '',
+            '{{composer_autoload_dev}}' => ($options['tests'] ?? true)
+                ? "\n  \"autoload-dev\": {\n    \"psr-4\": {\n      \"" . $this->toPascalCase($packageName) . "\\\\Tests\\\\\": \"tests/\"\n    }\n  },"
+                : '',
+            '{{composer_scripts_tests}}' => ($options['tests'] ?? true)
+                ? "\"test\": \"phpunit\",\n    "
+                : '',
             '{{composer_scripts_extra}}' => ($options['phpCsFixer'] ?? false)
                 ? ",\n    \"cs-check\": \"php-cs-fixer fix --dry-run\",\n    \"cs-fix\": \"php-cs-fixer fix\""
+                : '',
+            '{{composer_repositories_tests}}' => ($options['tests'] ?? true)
+                ? "\n  \"repositories\": [\n    {\n      \"type\": \"path\",\n      \"url\": \"" . $this->resolveTestUtilsPath() . "\"\n    }\n  ],"
                 : '',
         ];
     }

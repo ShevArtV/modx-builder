@@ -20,6 +20,7 @@ modxapp create <name> [options]
 | `--repository=<url>` | URL репозитория | — |
 | `--short-name=<name>` | Краткое имя (для лексиконов) | первые 3 символа имени |
 | `--php-version=<ver>` | Минимальная версия PHP | `8.1` |
+| `--no-tests` | Не генерировать PHPUnit и test-utils | `false` |
 | `--php-cs-fixer` | Добавить PHP CS Fixer | `false` |
 | `--eslint` | Добавить ESLint для JS | `false` |
 | `--template=<path>` | Путь к [кастомным шаблонам](templates.md) | оригинальные |
@@ -51,9 +52,12 @@ core/components/mypackage/
 ├── bootstrap.php              — точка входа, регистрация namespace
 ├── composer.json              — зависимости (PHPStan всегда включён)
 ├── phpstan.neon               — конфигурация PHPStan (level 5)
+├── phpunit.xml                — конфигурация PHPUnit
 ├── .php-cs-fixer.dist.php     — конфигурация CS Fixer (если включён)
 ├── eslint.config.js           — конфигурация ESLint (если включён)
 ├── package.json               — npm зависимости (если ESLint включён)
+├── tests/
+│   └── ExampleTest.php        — пример unit-теста с моком MODX
 ├── docs/
 │   ├── readme.txt
 │   ├── license.txt
@@ -112,4 +116,5 @@ package_builder/packages/mypackage/
 | `{{repository}}` | URL репозитория | `https://github.com/...` |
 | `{{current_year}}` | Текущий год | `2026` |
 | `{{current_date}}` | Текущая дата | `2026-03-22` |
+| `{{builder_test_utils_path}}` | Путь к test-utils | `../../../package_builder/test-utils` |
 
