@@ -110,6 +110,23 @@ try {
                 'standalone' => $cli->hasOption('standalone'),
             ];
 
+            if ($cli->hasOption('no-dev')) {
+                $componentDir = getcwd() . '/' . ($packageConfig['paths']['core'] ?? 'core/components/' . $packageName . '/');
+                if (is_file($componentDir . 'composer.json')) {
+                    echo "Reinstalling composer dependencies without dev...\n";
+                    $cmd = 'cd ' . escapeshellarg($componentDir) . ' && composer install --no-dev --no-interaction --quiet 2>&1';
+                    exec($cmd, $output, $rc);
+                    if ($rc !== 0) {
+                        $cli->showError("composer install --no-dev failed in {$componentDir}:\n" . implode("\n", $output));
+                    }
+                    register_shutdown_function(function () use ($componentDir) {
+                        echo "Restoring dev dependencies...\n";
+                        $cmd = 'cd ' . escapeshellarg($componentDir) . ' && composer install --no-interaction --quiet 2>&1';
+                        exec($cmd);
+                    });
+                }
+            }
+
             if (!isset($builder)) {
                 $builder = new ComponentBuilder($packageConfig);
             }

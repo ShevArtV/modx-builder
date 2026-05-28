@@ -91,6 +91,10 @@ class CLI
         echo "  --install        Install package after build\n";
         echo "  --download       Download package zip after build (web only)\n";
         echo "  --encrypt        Enable package encryption\n";
+        echo "  --no-dev         Run `composer install --no-dev` in package core before build\n";
+        echo "                   (excludes phpstan/phpunit/php-cs-fixer from vendor/),\n";
+        echo "                   dev deps are restored after build via shutdown handler\n";
+        echo "  --no-check       Skip pre-build tool checks (phpunit, phpstan, cs, lint)\n";
         echo "\nCreate options:\n";
         echo "  --elements       Generate element template files\n";
         echo "  --author=        Author name\n";
