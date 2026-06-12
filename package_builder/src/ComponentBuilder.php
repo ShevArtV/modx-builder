@@ -112,6 +112,12 @@ class ComponentBuilder
             ],
         ]);
 
+        $setupOptions = $this->resolveSetupOptions($packageConfig);
+        if ($setupOptions !== '') {
+            $standalone->setSetupOptions($setupOptions);
+            echo "  Setup options: enabled\n";
+        }
+
         $result = $standalone->pack();
 
         $this->cleanupTempDirs();
@@ -246,7 +252,7 @@ class ComponentBuilder
             $this->addEncryptionResolverEnd($packageConfig);
         }
 
-        $this->builder->setPackageAttributes([
+        $packageAttributes = [
             'changelog' => $this->readDocFile($packageConfig['abs_core'] . 'docs/changelog.txt'),
             'license' => $this->readDocFile($packageConfig['abs_core'] . 'docs/license.txt'),
             'readme' => $this->readDocFile($packageConfig['abs_core'] . 'docs/readme.txt'),
@@ -254,7 +260,25 @@ class ComponentBuilder
                 'php' => '>=' . ($packageConfig['php_version'] ?? '8.1'),
                 'modx' => '>=3.0.0',
             ],
-        ]);
+        ];
+
+        // setup-options модалка: атрибут + файл setup-options.php в корне пакета
+        // (MODX на установке делает include core/packages/<sig>/setup-options.php).
+        $setupOptions = $this->resolveSetupOptions($packageConfig);
+        if ($setupOptions !== '') {
+            $packageAttributes['setup-options'] = ['source' => 1, 'preprocess' => ''];
+        }
+
+        $this->builder->setPackageAttributes($packageAttributes);
+
+        if ($setupOptions !== '') {
+            $sigDir = rtrim($this->builder->directory, '/\\') . '/' . $this->builder->getSignature() . '/';
+            if (!is_dir($sigDir)) {
+                mkdir($sigDir, 0755, true);
+            }
+            file_put_contents($sigDir . 'setup-options.php', $setupOptions);
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Added setup-options modal to package');
+        }
 
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing up transport package zip...');
         $this->builder->pack();
@@ -273,6 +297,21 @@ class ComponentBuilder
         }
 
         return true;
+    }
+
+    /**
+     * Содержимое скрипта setup-options модалки (форма при установке) или ''.
+     * Путь берётся из config.php ключ 'setup_options', относительно папки пакета
+     * в package_builder.
+     */
+    private function resolveSetupOptions(array $packageConfig): string
+    {
+        if (empty($packageConfig['setup_options'])) {
+            return '';
+        }
+        $pkgDir = getcwd() . '/package_builder/packages/' . $packageConfig['name_lower'] . '/';
+        $file = $pkgDir . $packageConfig['setup_options'];
+        return is_file($file) ? (string)file_get_contents($file) : '';
     }
 
     private function createIgnoreFilter(array $packageConfig): IgnoreFilter

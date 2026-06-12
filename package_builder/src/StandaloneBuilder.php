@@ -9,6 +9,7 @@ class StandaloneBuilder
     private string $packagesDir;
     private array $vehicles = [];
     private array $attributes = [];
+    private string $setupOptions = '';
 
     public function __construct(string $packagesDir)
     {
@@ -306,8 +307,21 @@ class StandaloneBuilder
         $this->attributes = $attrs;
     }
 
+    /** Скрипт setup-options модалки (возвращает HTML формы при установке). */
+    public function setSetupOptions(string $content): void
+    {
+        $this->setupOptions = $content;
+    }
+
     public function pack(): bool
     {
+        // setup-options модалка: кладём скрипт в корень пакета и регистрируем
+        // атрибут (MODX на установке делает include <sig>/setup-options.php).
+        if ($this->setupOptions !== '') {
+            file_put_contents($this->buildDir . 'setup-options.php', $this->setupOptions);
+            $this->attributes['setup-options'] = ['source' => 1, 'preprocess' => ''];
+        }
+
         $manifest = [
             'manifest-version' => '1.1',
             'manifest-attributes' => $this->attributes,
