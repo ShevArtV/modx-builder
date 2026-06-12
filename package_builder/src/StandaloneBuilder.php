@@ -302,6 +302,49 @@ class StandaloneBuilder
         ];
     }
 
+    /**
+     * Кастомное событие пакета (modEvent, service=plugin). Сторонние плагины
+     * смогут к нему привязываться через админку. Манифест — elements/events.php
+     * (плоский список имён).
+     */
+    public function addEvent(string $name, string $groupName, bool $update = true): void
+    {
+        $object = [
+            'name' => $name,
+            'service' => 6,
+            'groupname' => $groupName,
+        ];
+
+        $hash = md5($name . $this->signature . 'event');
+
+        $vehicle = [
+            'unique_key' => 'name',
+            'preserve_keys' => true,
+            'update_object' => $update,
+            'resolve' => null,
+            'validate' => null,
+            'vehicle_class' => 'xPDO\\Transport\\xPDOObjectVehicle',
+            'vehicle_package' => '',
+            'class' => 'MODX\\Revolution\\modEvent',
+            'guid' => $this->generateGuid(),
+            'native_key' => $name,
+            'signature' => $hash,
+            'object' => json_encode($object),
+        ];
+
+        $dir = $this->buildDir . 'MODX/Revolution/modEvent/';
+        $this->writeVehicle($dir, $hash, $vehicle);
+
+        $this->vehicles[] = [
+            'vehicle_package' => '',
+            'vehicle_class' => 'xPDO\\Transport\\xPDOObjectVehicle',
+            'class' => 'MODX\\Revolution\\modEvent',
+            'guid' => $vehicle['guid'],
+            'native_key' => $name,
+            'filename' => 'MODX/Revolution/modEvent/' . $hash . '.vehicle',
+        ];
+    }
+
     public function setPackageAttributes(array $attrs): void
     {
         $this->attributes = $attrs;

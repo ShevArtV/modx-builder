@@ -102,6 +102,17 @@ class ComponentBuilder
             echo "  Menus: " . count($elements['menus']) . "\n";
         }
 
+        if (!empty($elements['events'])) {
+            foreach ($elements['events'] as $eventName) {
+                $standalone->addEvent(
+                    $eventName,
+                    $packageConfig['name'],
+                    $packageConfig['build']['update']['events'] ?? true
+                );
+            }
+            echo "  Events: " . count($elements['events']) . "\n";
+        }
+
         $standalone->setPackageAttributes([
             'changelog' => $this->readDocFile($packageConfig['abs_core'] . 'docs/changelog.txt'),
             'license' => $this->readDocFile($packageConfig['abs_core'] . 'docs/license.txt'),
