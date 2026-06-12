@@ -7,6 +7,7 @@ class StandaloneBuilder
     private string $signature;
     private string $buildDir;
     private string $packagesDir;
+    private string $nameLower = '';
     private array $vehicles = [];
     private array $attributes = [];
     private string $setupOptions = '';
@@ -22,6 +23,7 @@ class StandaloneBuilder
 
     public function createPackage(string $name, string $version, string $release): void
     {
+        $this->nameLower = strtolower($name);
         $this->signature = strtolower($name);
         if (!empty($version)) {
             $this->signature .= '-' . $version;
@@ -708,7 +710,14 @@ class StandaloneBuilder
 
     private function resolveStaticFile(array $data): string
     {
-        return FileSystem::resolveStaticFilePath($data['content'] ?? '');
+        $relativePath = FileSystem::resolveStaticFilePath($data['content'] ?? '');
+        if ($relativePath === '') {
+            return '';
+        }
+        // static_file резолвится MODX от getSourcePath() = core/components/, поэтому
+        // путь должен быть относительно неё: <name_lower>/elements/... (иначе MODX
+        // ищет core/components/elements/... → не находит → откат на запечённый код).
+        return $this->nameLower . '/' . ltrim($relativePath, '/');
     }
 
     private function prepareBuildSource(IgnoreFilter $filter, string $sourcePath, string $tmpName): string
