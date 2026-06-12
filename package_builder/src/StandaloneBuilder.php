@@ -611,7 +611,7 @@ class StandaloneBuilder
                     'description' => $data['description'] ?? '',
                     'editor_type' => 0,
                     'category' => 0,
-                    'icon' => '',
+                    'icon' => $data['icon'] ?? '',
                     'template_type' => 0,
                     'content' => $content,
                     'locked' => 0,
