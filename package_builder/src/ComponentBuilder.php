@@ -327,7 +327,7 @@ class ComponentBuilder
 
     private function createIgnoreFilter(array $packageConfig): IgnoreFilter
     {
-        $packagesPath = dirname(__DIR__) . '/packages/' . $packageConfig['name_lower'] . '/';
+        $packagesPath = getcwd() . '/package_builder/packages/' . $packageConfig['name_lower'] . '/';
         $ignoreFile = $packagesPath . '.packignore';
 
         $filter = new IgnoreFilter($ignoreFile);
