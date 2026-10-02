@@ -38,7 +38,7 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           composer install --no-interaction --no-progress --working-dir=core/components/demo
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          php ../package_builder/modxapp build demo --no-check
+          php ../package_builder/modxapp build demo
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
       - name: Check transport.zip and tool resolution

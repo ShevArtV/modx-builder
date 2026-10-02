@@ -1,5 +1,7 @@
 parameters:
     level: 5
+    bootstrapFiles:
+        - dev-autoload.php
     paths:
         - src
         - elements
@@ -8,3 +10,9 @@ parameters:
         analyse:
             - src/Model
             - vendor
+    ignoreErrors:
+        # connector вызывается из пакета SendIt, его классов в компоненте нет
+        -
+            message: '#unknown class SendIt#'
+            path: elements/snippets/connector.php
+            reportUnmatched: false

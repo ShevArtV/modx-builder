@@ -146,7 +146,28 @@ class ConfigManager
             }
         }
 
+        $this->dropMissingPhpstanPaths($targetPath);
         $this->applyToolsConfig($targetPath, $options);
+    }
+
+    /**
+     * Убрать из phpstan.neon пути, которых нет (elements/tests отключены при create) —
+     * иначе phpstan падает с "Path ... does not exist" и build не проходит проверки.
+     */
+    private function dropMissingPhpstanPaths(string $targetPath): void
+    {
+        $neon = $targetPath . '/phpstan.neon';
+        if (!is_file($neon)) {
+            return;
+        }
+
+        // строки списков paths/bootstrapFiles шаблона: "        - <путь>"
+        $content = preg_replace_callback(
+            '/^ {8}- ([\w\/.-]+)\R/m',
+            fn($m) => file_exists($targetPath . '/' . $m[1]) ? $m[0] : '',
+            file_get_contents($neon)
+        );
+        file_put_contents($neon, $content);
     }
 
     private function applyToolsConfig(string $targetPath, array $options): void

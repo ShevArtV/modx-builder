@@ -20,6 +20,10 @@
 - Без Composer `setup` и `build --no-dev` завершаются понятной ошибкой.
 - `create` при глобальной установке ссылается на `test-utils` из каталога modxapp —
   `composer install` в новом компоненте больше не падает на `modx/test-utils`.
+- Свежий `create` проходит `build` с проверками: шаблонный `dev-autoload.php` подключает
+  классы MODX (из `core/vendor` сайта или `~/.modxapp/core`) для PHPUnit и PHPStan;
+  `phpstan.neon` не ссылается на отключённые `elements/`/`tests/` и не спотыкается о
+  `SendIt` в шаблонном connector-сниппете.
 - Имя пакета в шаблонном `composer.json` в нижнем регистре (`vendor/name`) — Composer
   отвергал `vendor/Name`.
 - В transport.zip не попадают dev-файлы корня компонента: `tests/`, `phpunit.xml*`,

@@ -33,6 +33,7 @@ class IgnoreFilter
         '/.phpunit.result.cache',
         '/phpstan-stubs/',
         '/phpstan-stubs.php',
+        '/dev-autoload.php',
         'composer.phar',
         'vendor/composer/tmp-*',
     ];

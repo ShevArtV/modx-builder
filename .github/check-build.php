@@ -27,7 +27,7 @@ for ($i = 0; $i < $zip->numFiles; $i++) {
     if (str_contains($name, '\\')) {
         $fail("backslash in zip entry: {$name}");
     }
-    if (preg_match('#(^|/)(tests/|phpunit\.xml)#', $name)) {
+    if (preg_match('#/demo/(tests/|phpunit\.xml|dev-autoload\.php)#', $name)) {
         $fail("dev file in zip: {$name}");
     }
     $hasManifest = $hasManifest || str_ends_with($name, '/manifest.php');

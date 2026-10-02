@@ -23,6 +23,17 @@ Unit-тестирование компонентов без реальной б�
 
 Мок modX включает стабы: `log()`, `newQuery()`, `getObject()`, `getCollection()`, `getIterator()`, `getOption()`, а также моки `services`, `lexicon` и `cacheManager`.
 
+### Классы MODX в тестах и PHPStan
+
+Моки и анализатору нужны классы `MODX\Revolution\*`. Их подключает `dev-autoload.php` в
+корне компонента: он указан как `bootstrap` в `phpunit.xml` и в `bootstrapFiles` у
+`phpstan.neon`. Ядро ищется в `core/vendor` установленного MODX, а без него — в
+`~/.modxapp/core` (его скачивает `modxapp setup`). В transport.zip файл не попадает.
+
+Компонент создан версией до 0.4.8 и `build` падает с `Class "MODX\Revolution\modX" does
+not exist` — скопируйте `dev-autoload.php` из шаблона
+(`package_builder/templates/default/core/components/`) и пропишите его в оба конфига.
+
 ### Запуск тестов
 
 ```bash
