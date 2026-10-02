@@ -9,6 +9,33 @@ use RecursiveIteratorIterator;
 
 final class FileSystem
 {
+    /** Пути через '/': Windows их понимает, а zip-архив и PHP-конфиги требуют. */
+    public static function normalizePath(string $path): string
+    {
+        return str_replace('\\', '/', $path);
+    }
+
+    /**
+     * Домашняя папка пользователя: HOME (Linux/macOS), USERPROFILE (Windows).
+     * getenv() возвращает false, а не null, поэтому цепочка `??` здесь не работает.
+     */
+    public static function homeDir(): string
+    {
+        foreach ([$_SERVER['HOME'] ?? '', getenv('HOME'), getenv('USERPROFILE')] as $dir) {
+            if (is_string($dir) && $dir !== '') {
+                return rtrim(self::normalizePath($dir), '/');
+            }
+        }
+
+        $drive = getenv('HOMEDRIVE');
+        $path = getenv('HOMEPATH');
+        if ($drive && $path) {
+            return rtrim(self::normalizePath($drive . $path), '/');
+        }
+
+        throw new \RuntimeException('Cannot determine home directory: set HOME or USERPROFILE.');
+    }
+
     public static function recursiveCopy(string $source, string $destination): void
     {
         if (!is_dir($source)) {

@@ -1,5 +1,5 @@
 {
-  "name": "{{gitlogin}}/{{Package_name}}",
+  "name": "{{composer_name}}",
   "description": "Component for MODX 3",
   "type": "modx-extra",
   "license": "MIT",

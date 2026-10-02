@@ -8,7 +8,8 @@ class SetupManager
 
     public function __construct(string $basePath = '')
     {
-        $this->basePath = $basePath ?: getcwd();
+        // '/' вместо '\': пути подставляются в config.inc.php внутрь PHP-строк
+        $this->basePath = FileSystem::normalizePath($basePath ?: getcwd());
     }
 
     public function isSetupComplete(): bool
@@ -21,6 +22,17 @@ class SetupManager
         return file_exists($this->basePath . '/core/src/Revolution/modX.php');
     }
 
+    /** Ядро, его зависимости и конфиг на месте — можно собирать. */
+    public function isReady(): bool
+    {
+        return $this->hasCore() && $this->hasVendor() && $this->isSetupComplete();
+    }
+
+    private function hasVendor(): bool
+    {
+        return file_exists($this->basePath . '/core/vendor/autoload.php');
+    }
+
     public function setup(): bool
     {
         if (!$this->hasCore()) {
@@ -30,6 +42,15 @@ class SetupManager
             }
         } else {
             echo "MODX core found\n";
+        }
+
+        // Отдельно от скачивания: повторный setup доустанавливает зависимости,
+        // если в прошлый раз composer не нашёлся или упал
+        if (!$this->hasVendor() && file_exists($this->basePath . '/core/composer.json')) {
+            echo "Installing MODX dependencies...\n";
+            if (!$this->composerInstall($this->basePath . '/core')) {
+                return false;
+            }
         }
 
         echo "Creating config...\n";
@@ -55,9 +76,11 @@ class SetupManager
     {
         $tagsUrl = 'https://api.github.com/repos/modxcms/revolution/tags?per_page=1';
 
+        // токен снимает лимит 60 запросов/час к API (общие IP в CI, офисный NAT)
+        $token = getenv('GITHUB_TOKEN');
         $context = stream_context_create([
             'http' => [
-                'header' => "User-Agent: modxapp\r\n",
+                'header' => "User-Agent: modxapp\r\n" . ($token ? "Authorization: Bearer {$token}\r\n" : ''),
                 'timeout' => 30,
             ],
         ]);
@@ -156,11 +179,6 @@ class SetupManager
 
         echo "Core extracted to {$targetCore}\n";
 
-        if (file_exists($targetCore . '/composer.json')) {
-            echo "Installing MODX dependencies...\n";
-            $this->composerInstall($targetCore);
-        }
-
         return true;
     }
 
@@ -171,8 +189,10 @@ class SetupManager
             mkdir($configDir, 0755, true);
         }
 
-        $dbPath = $this->basePath . '/core/modxapp.sqlite';
-        $corePath = $this->basePath . '/core/';
+        // Экранируем ' — путь вида C:/Users/O'Neil ломает PHP-строку в конфиге
+        $basePath = str_replace("'", "\\'", $this->basePath);
+        $dbPath = $basePath . '/core/modxapp.sqlite';
+        $corePath = $basePath . '/core/';
 
         $config = <<<PHP
 <?php
@@ -189,10 +209,10 @@ global \$database_dsn, \$database_user, \$database_password, \$config_options, \
 
 if (!defined('MODX_CORE_PATH')) define('MODX_CORE_PATH', '{$corePath}');
 if (!defined('MODX_PROCESSORS_PATH')) define('MODX_PROCESSORS_PATH', '{$corePath}src/Revolution/Processors/');
-if (!defined('MODX_CONNECTORS_PATH')) define('MODX_CONNECTORS_PATH', '{$this->basePath}/connectors/');
-if (!defined('MODX_MANAGER_PATH')) define('MODX_MANAGER_PATH', '{$this->basePath}/manager/');
+if (!defined('MODX_CONNECTORS_PATH')) define('MODX_CONNECTORS_PATH', '{$basePath}/connectors/');
+if (!defined('MODX_MANAGER_PATH')) define('MODX_MANAGER_PATH', '{$basePath}/manager/');
 if (!defined('MODX_MANAGER_URL')) define('MODX_MANAGER_URL', '/manager/');
-if (!defined('MODX_BASE_PATH')) define('MODX_BASE_PATH', '{$this->basePath}/');
+if (!defined('MODX_BASE_PATH')) define('MODX_BASE_PATH', '{$basePath}/');
 if (!defined('MODX_BASE_URL')) define('MODX_BASE_URL', '/');
 if (!defined('MODX_URL_SCHEME')) define('MODX_URL_SCHEME', 'http://');
 if (!defined('MODX_HTTP_HOST')) define('MODX_HTTP_HOST', 'localhost');
@@ -204,7 +224,7 @@ if (!defined('MODX_LOG_LEVEL_ERROR')) define('MODX_LOG_LEVEL_ERROR', 1);
 if (!defined('MODX_LOG_LEVEL_WARN')) define('MODX_LOG_LEVEL_WARN', 2);
 if (!defined('MODX_LOG_LEVEL_INFO')) define('MODX_LOG_LEVEL_INFO', 3);
 if (!defined('MODX_LOG_LEVEL_DEBUG')) define('MODX_LOG_LEVEL_DEBUG', 4);
-if (!defined('MODX_ASSETS_PATH')) define('MODX_ASSETS_PATH', '{$this->basePath}/assets/');
+if (!defined('MODX_ASSETS_PATH')) define('MODX_ASSETS_PATH', '{$basePath}/assets/');
 if (!defined('MODX_ASSETS_URL')) define('MODX_ASSETS_URL', '/assets/');
 PHP;
 
@@ -292,51 +312,31 @@ PHP;
         echo "SQLite database initialized: {$dbPath}\n";
     }
 
-    private function composerInstall(string $dir): void
+    /** Без зависимостей ядра (vendor/) сборка падает на new modX(), поэтому ошибка, а не предупреждение. */
+    private function composerInstall(string $dir): bool
     {
-        $composerBin = $this->findComposer();
+        $composer = Process::composer();
 
-        if (!$composerBin) {
-            echo "  WARNING: Composer not found. Run 'composer install' manually in {$dir}\n";
-            return;
+        if ($composer === null) {
+            echo "ERROR: Composer not found in PATH. Install it (https://getcomposer.org),\n";
+            echo "       then run 'composer install --no-dev' in {$dir}\n";
+            return false;
         }
 
-        $phpBin = PHP_BINARY;
-        $cmd = escapeshellarg($phpBin) . ' ' . escapeshellarg($composerBin)
-            . ' install --no-dev --no-interaction --ignore-platform-reqs --working-dir=' . escapeshellarg($dir) . ' 2>&1';
-        $output = [];
-        $exitCode = 0;
-        exec($cmd, $output, $exitCode);
+        [$exitCode, $output] = Process::run(
+            [...$composer, 'install', '--no-dev', '--no-interaction', '--ignore-platform-reqs'],
+            $dir
+        );
 
-        if ($exitCode === 0) {
-            echo "  Dependencies installed\n";
-        } else {
-            echo "  WARNING: composer install failed. Run manually in {$dir}\n";
-            echo "  " . implode("\n  ", array_slice($output, -3)) . "\n";
-        }
-    }
-
-    private function findComposer(): ?string
-    {
-        $paths = [
-            'composer',
-            'composer.phar',
-            getenv('HOME') . '/bin/composer',
-            '/usr/local/bin/composer',
-            '/usr/bin/composer',
-        ];
-
-        foreach ($paths as $path) {
-            $which = trim(shell_exec("which " . escapeshellarg($path) . " 2>/dev/null") ?? '');
-            if (!empty($which)) {
-                return $which;
-            }
-            if (file_exists($path)) {
-                return $path;
-            }
+        if ($exitCode !== 0) {
+            $tail = array_slice(explode("\n", rtrim($output)), -3);
+            echo "ERROR: composer install failed. Run it manually in {$dir}\n";
+            echo "  " . implode("\n  ", $tail) . "\n";
+            return false;
         }
 
-        return null;
+        echo "  Dependencies installed\n";
+        return true;
     }
 
 }

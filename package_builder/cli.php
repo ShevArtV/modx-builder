@@ -30,6 +30,8 @@ use ComponentBuilder\LexiconExtractor;
 use ComponentBuilder\SettingsExtractor;
 use ComponentBuilder\ElementManager;
 use ComponentBuilder\ExportManager;
+use ComponentBuilder\FileSystem;
+use ComponentBuilder\Process;
 use ComponentBuilder\SchemaExtractor;
 use ComponentBuilder\SetupManager;
 use ComponentBuilder\ToolsChecker;
@@ -41,6 +43,22 @@ $command = $cli->getCommand();
 if (!$command || $command === 'help') {
     $cli->showHelp();
     exit(0);
+}
+
+// В стандартном PHP под Windows эти расширения выключены в php.ini —
+// внятная подсказка сразу, а не падение посреди сборки
+$requiredExtensions = ['setup' => ['zip', 'pdo_sqlite', 'openssl'], 'build' => ['zip']];
+$missing = array_filter($requiredExtensions[$command] ?? [], fn($ext) => !extension_loaded($ext));
+if ($missing) {
+    $lines = implode("\n", array_map(fn($ext) => "  extension={$ext}", $missing));
+    echo "ERROR: PHP extensions required for '{$command}' are not loaded. Enable in "
+        . (php_ini_loaded_file() ?: 'php.ini') . ":\n{$lines}\n";
+    exit(1);
+}
+if ($command === 'setup' && !ini_get('allow_url_fopen')) {
+    echo "ERROR: 'setup' downloads MODX from GitHub: set allow_url_fopen=On in "
+        . (php_ini_loaded_file() ?: 'php.ini') . "\n";
+    exit(1);
 }
 
 $configManager = new ConfigManager();
@@ -113,16 +131,18 @@ try {
             if ($cli->hasOption('no-dev')) {
                 $componentDir = getcwd() . '/' . ($packageConfig['paths']['core'] ?? 'core/components/' . $packageName . '/');
                 if (is_file($componentDir . 'composer.json')) {
-                    echo "Reinstalling composer dependencies without dev...\n";
-                    $cmd = 'cd ' . escapeshellarg($componentDir) . ' && composer install --no-dev --no-interaction --quiet 2>&1';
-                    exec($cmd, $output, $rc);
-                    if ($rc !== 0) {
-                        $cli->showError("composer install --no-dev failed in {$componentDir}:\n" . implode("\n", $output));
+                    $composer = Process::composer();
+                    if ($composer === null) {
+                        $cli->showError('--no-dev requires Composer in PATH (https://getcomposer.org)');
                     }
-                    register_shutdown_function(function () use ($componentDir) {
+                    echo "Reinstalling composer dependencies without dev...\n";
+                    [$rc, $output] = Process::run([...$composer, 'install', '--no-dev', '--no-interaction', '--quiet'], $componentDir);
+                    if ($rc !== 0) {
+                        $cli->showError("composer install --no-dev failed in {$componentDir}:\n" . $output);
+                    }
+                    register_shutdown_function(function () use ($componentDir, $composer) {
                         echo "Restoring dev dependencies...\n";
-                        $cmd = 'cd ' . escapeshellarg($componentDir) . ' && composer install --no-interaction --quiet 2>&1';
-                        exec($cmd);
+                        Process::run([...$composer, 'install', '--no-interaction', '--quiet'], $componentDir);
                     });
                 }
             }
@@ -477,12 +497,12 @@ try {
                 realpath(__DIR__) ?: __DIR__,
                 realpath(getcwd()) ?: getcwd()
             );
-            $modxappHome = ($_SERVER['HOME'] ?? getenv('HOME') ?? getenv('USERPROFILE')) . '/.modxapp';
+            $modxappHome = FileSystem::homeDir() . '/.modxapp';
             $basePath = $isGlobal ? $modxappHome : getcwd();
 
             $setupManager = new SetupManager($basePath);
 
-            if ($setupManager->hasCore()) {
+            if ($setupManager->isReady()) {
                 echo "MODX core already exists at {$basePath}/core/\n";
                 break;
             }

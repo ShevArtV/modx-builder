@@ -10,3 +10,5 @@
 /.packignore       export-ignore
 /docs              export-ignore
 /mkdocs.yml        export-ignore
+/.github          export-ignore
+/package_builder/packages/testpkg export-ignore

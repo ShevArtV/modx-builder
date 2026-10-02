@@ -364,7 +364,7 @@ class ComponentBuilder
     private function initializeModx(): void
     {
         if (!defined('MODX_CORE_PATH')) {
-            $modxappHome = ($_SERVER['HOME'] ?? getenv('HOME') ?? '') . '/.modxapp';
+            $modxappHome = FileSystem::homeDir() . '/.modxapp';
 
             $searchPaths = [
                 getcwd(),
@@ -384,7 +384,8 @@ class ComponentBuilder
 
             if (!$found) {
                 $path = getcwd();
-                while (!file_exists($path . '/core/config/config.inc.php') && strlen($path) > 1) {
+                // dirname('/') === '/', dirname('C:\') === 'C:\' — останов на корне любого диска
+                while (!file_exists($path . '/core/config/config.inc.php') && dirname($path) !== $path) {
                     $path = dirname($path);
                 }
                 if (!file_exists($path . '/core/config/config.inc.php')) {

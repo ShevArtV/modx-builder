@@ -25,6 +25,16 @@ class IgnoreFilter
         'node_modules/',
         'package.json',
         'package-lock.json',
+        // dev-артефакты, которые создаёт шаблон `create` и тулинг; '/' — только в корне компонента
+        '/tests/',
+        '/phpunit.xml',
+        '/phpunit.xml.dist',
+        '/.phpunit.cache/',
+        '/.phpunit.result.cache',
+        '/phpstan-stubs/',
+        '/phpstan-stubs.php',
+        'composer.phar',
+        'vendor/composer/tmp-*',
     ];
 
     /** @var array<int, array{pattern: string, negated: bool, dirOnly: bool, anchored: bool}> */

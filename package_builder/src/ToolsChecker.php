@@ -91,22 +91,19 @@ class ToolsChecker
             return false;
         }
 
-        $bin = explode(' ', $command)[0];
-        $binPath = $this->corePath . '/' . $bin;
+        $args = array_values(array_filter(explode(' ', $command), fn($part) => $part !== ''));
+        $bin = array_shift($args);
+        $resolved = Process::resolve($bin, $this->corePath);
 
-        if (!file_exists($binPath) && !$this->isGlobalCommand($bin)) {
+        if ($resolved === null) {
             echo "  {$bin} not installed, skipping\n";
             return true;
         }
 
-        $output = [];
-        $exitCode = 0;
+        [$exitCode, $outputStr] = Process::run([...$resolved, ...$args], $this->corePath);
 
-        $safeCommand = $this->buildSafeCommand($command);
-        exec("cd " . escapeshellarg($this->corePath) . " && {$safeCommand} 2>&1", $output, $exitCode);
-
-        $outputStr = implode("\n", $output);
-        if (!empty($outputStr)) {
+        $outputStr = rtrim($outputStr);
+        if ($outputStr !== '') {
             echo $outputStr . "\n";
         }
 
@@ -137,20 +134,5 @@ class ToolsChecker
         ];
 
         return in_array($bin, $allowedBins, true);
-    }
-
-    private function buildSafeCommand(string $command): string
-    {
-        $parts = explode(' ', $command);
-        $bin = array_shift($parts);
-        $args = array_map('escapeshellarg', $parts);
-
-        return $bin . ' ' . implode(' ', $args);
-    }
-
-    private function isGlobalCommand(string $bin): bool
-    {
-        $result = trim(shell_exec("which " . escapeshellarg($bin) . " 2>/dev/null") ?? '');
-        return !empty($result);
     }
 }

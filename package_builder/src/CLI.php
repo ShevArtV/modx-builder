@@ -10,7 +10,7 @@ class CLI
 
     public function __construct(array $argv)
     {
-        $configDir = ($_SERVER['HOME'] ?? getenv('HOME') ?? getenv('USERPROFILE')) . '/.modxapp';
+        $configDir = FileSystem::homeDir() . '/.modxapp';
         if (!is_dir($configDir)) {
             mkdir($configDir, 0755, true);
         }

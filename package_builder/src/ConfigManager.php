@@ -272,9 +272,18 @@ class ConfigManager
         return str_replace(' ', '', ucwords(str_replace('-', ' ', $name)));
     }
 
+    /**
+     * Путь для path-репозитория composer.json пакета (лежит в core/components/<name>/).
+     * Копия test-utils в проекте — относительный путь; иначе — test-utils из установки
+     * modxapp (глобальный composer): без неё `composer install` пакета не находит modx/test-utils.
+     */
     private function resolveTestUtilsPath(): string
     {
-        return '../../../package_builder/test-utils';
+        if (is_dir(getcwd() . '/package_builder/test-utils')) {
+            return '../../../package_builder/test-utils';
+        }
+
+        return FileSystem::normalizePath(dirname(__DIR__) . '/test-utils');
     }
 
     private function getPlaceholders(string $packageName, ?array $options = []): array
@@ -287,11 +296,13 @@ class ConfigManager
             '{{author_email}}' => $options['email'] ?? 'your-email@example.com',
             '{{php_version}}' => $options['phpVersion'] ?? '8.1',
             '{{gitlogin}}' => $options['gitlogin'] ?? 'your-username',
+            // composer принимает в name только нижний регистр
+            '{{composer_name}}' => strtolower(($options['gitlogin'] ?? 'your-username') . '/' . $packageName),
             '{{repository}}' => $options['repository'] ?? 'https://github.com/',
             '{{current_year}}' => date('Y'),
             '{{current_date}}' => date('Y-m-d'),
             '{{composer_require_dev_tests}}' => ($options['tests'] ?? true)
-                ? "\"phpunit/phpunit\": \"^10.0|^11.0\",\n    \"modx/test-utils\": \"dev-main\",\n    "
+                ? "\"phpunit/phpunit\": \"^10.0|^11.0\",\n    \"modx/test-utils\": \"@dev\",\n    "
                 : '',
             '{{composer_require_dev_extra}}' => ($options['phpCsFixer'] ?? false)
                 ? ",\n    \"friendsofphp/php-cs-fixer\": \"^3.0\""

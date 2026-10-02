@@ -32,11 +32,23 @@ modxapp build mypackage          # собрать transport.zip
 
 [shevartv.github.io/modx-builder](https://shevartv.github.io/modx-builder/)
 
+## Режимы работы
+
+- **Standalone** — MODX не нужен. `modxapp setup` один раз скачивает ядро в `~/.modxapp`
+  (Windows: `%USERPROFILE%\.modxapp`) и собирает пакеты через SQLite.
+- **Full** — команда запускается в корне установленного MODX 3: доступны `elements`,
+  `export`, `schema-extract` и `build --install`.
+
 ## Требования
 
-- PHP 8.1+
+- PHP 8.1+ с расширениями `zip`, `pdo_sqlite`, `openssl`, `mbstring`
 - Composer
+- Linux, macOS или Windows (PowerShell/cmd, без WSL) — [настройка PHP на Windows](https://shevartv.github.io/modx-builder/getting-started/#windows)
+
+## Изменения
+
+[CHANGELOG.md](CHANGELOG.md)
 
 ## Лицензия
 
-MIT
+[MIT](LICENSE)

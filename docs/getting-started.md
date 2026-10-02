@@ -6,9 +6,11 @@
 
 - **PHP** 8.1+
 - **Composer**
-- **Расширения PHP**: `zip`, `mbstring`
+- **Расширения PHP**: `zip`, `pdo_sqlite`, `openssl`, `mbstring`
+- **`allow_url_fopen = On`** — `setup` скачивает ядро MODX с GitHub
 
-Достаточно для `setup`, `create`, `build`, `extract-*`.
+Достаточно для `setup`, `create`, `build`, `extract-*`. Если расширения не хватает,
+`modxapp` остановится с ошибкой и подскажет, какую строку включить в `php.ini`.
 
 ### Для полного функционала
 
@@ -54,6 +56,38 @@ composer global require shevartv/modx-builder
         ```
         %USERPROFILE%\AppData\Roaming\Composer\vendor\bin
         ```
+
+## Windows
+
+Работает в PowerShell и `cmd` — WSL не нужен.
+
+1. **PHP 8.1+.** Скачайте zip с [windows.php.net](https://windows.php.net/download/) (или
+   поставьте через `winget install PHP.PHP.8.3`) и добавьте каталог PHP в `PATH`.
+2. **Расширения.** В дистрибутиве PHP для Windows они выключены. Скопируйте
+   `php.ini-development` в `php.ini` и раскомментируйте:
+   ```ini
+   extension_dir = "ext"
+   extension=openssl
+   extension=pdo_sqlite
+   extension=zip
+   extension=mbstring
+   ```
+   Какой `php.ini` загружен — `php --ini`.
+3. **Composer.** [Composer-Setup.exe](https://getcomposer.org/Composer-Setup.exe) сам
+   добавит `composer` в `PATH`; путь к глобальным пакетам — в примечании выше.
+4. **Установка и первый пакет** (PowerShell):
+   ```powershell
+   composer global require shevartv/modx-builder
+   modxapp setup
+   modxapp create mypackage
+   modxapp build mypackage
+   ```
+
+Ядро MODX и настройки `modxapp` лежат в `%USERPROFILE%\.modxapp`. Чтобы скачать ядро
+заново, удалите этот каталог и запустите `modxapp setup`.
+
+Шаблонные проверки при `build` (PHPUnit, PHPStan, PHP CS Fixer) запускаются из `vendor\bin`
+компонента — сначала выполните `composer install` в `core\components\<имя>`.
 
 ## Локальная установка
 

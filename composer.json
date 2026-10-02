@@ -9,7 +9,13 @@
         }
     ],
     "require": {
-        "php": ">=8.1"
+        "php": ">=8.1",
+        "ext-json": "*",
+        "ext-zip": "*"
+    },
+    "suggest": {
+        "ext-pdo_sqlite": "Required by `modxapp setup` and headless (SQLite) builds",
+        "ext-openssl": "Required by `modxapp setup` to download MODX core from GitHub"
     },
     "autoload": {
         "psr-4": {

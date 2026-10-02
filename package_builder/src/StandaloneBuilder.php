@@ -759,7 +759,8 @@ class StandaloneBuilder
         $dirLen = strlen($dir);
 
         foreach ($iterator as $file) {
-            $relativePath = $prefix . substr($file->getPathname(), $dirLen);
+            // В zip только '/': с '\' (Windows) MODX не распакует пакет
+            $relativePath = $prefix . FileSystem::normalizePath(substr($file->getPathname(), $dirLen));
 
             if ($file->isDir()) {
                 $zip->addEmptyDir($relativePath);
