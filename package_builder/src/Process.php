@@ -46,7 +46,8 @@ final class Process
     public static function resolve(string $bin, string $cwd = ''): ?array
     {
         if (str_contains($bin, '/') || str_contains($bin, '\\')) {
-            $path = self::isAbsolute($bin) ? $bin : rtrim($cwd, '/\\') . '/' . $bin;
+            // абсолютный путь: run() запускает из своего cwd, относительный от вызывающего там не найдётся
+            $path = self::isAbsolute($bin) ? $bin : rtrim(realpath($cwd) ?: $cwd, '/\\') . '/' . $bin;
             if (is_file($path) && self::isPhpScript($path)) {
                 return [PHP_BINARY, $path];
             }
